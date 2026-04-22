@@ -8,6 +8,9 @@ const SOURCE_DIR = path.join(ROOT, "ML escrime_medievale");
 const OUT_CONVERSATIONS = path.join(ROOT, "conversations");
 const TITLE = "Archive Mailing-List Escrime Ancienne - 2002 à 2011";
 const AUTHOR = "Simon LANDAIS pour la FFAMHE";
+const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+const EMAIL_PLACEHOLDER = "[adresse email anonymisée]";
+const YAHOO_FOOTER_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation et de la Charte sur la vie priv[ée]e[\s\S]{0,260}?http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html et[\s\S]{0,160}?http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html[>\s]*/gi;
 
 const decoderCache = new Map();
 
@@ -202,6 +205,21 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+function anonymizeEmails(value) {
+  return value.replace(EMAIL_REGEX, EMAIL_PLACEHOLDER);
+}
+
+function cleanMessageText(value) {
+  return anonymizeEmails(value)
+    .replace(YAHOO_FOOTER_REGEX, "\n")
+    .replace(/\n{4,}/g, "\n\n\n")
+    .trim();
+}
+
+function findBodyEmails(value) {
+  return [...new Set(value.match(EMAIL_REGEX) ?? [])];
+}
+
 function formatDate(date) {
   if (!Number.isFinite(date.getTime())) return "Date inconnue";
   return new Intl.DateTimeFormat("fr-FR", {
@@ -228,8 +246,10 @@ async function readMessage(file) {
   const headers = parseHeaders(rawHeaders);
   const subject = decodeWords(header(headers, "subject"));
   const date = new Date(header(headers, "date"));
-  const from = decodeWords(header(headers, "from")).replace(/\s+/g, " ").trim() || "Auteur inconnu";
-  const text = extractTextPart(buffer).replace(/\r\n/g, "\n").replace(/\n{4,}/g, "\n\n\n").trim();
+  const from = anonymizeEmails(decodeWords(header(headers, "from")).replace(/\s+/g, " ").trim()) || "Auteur inconnu";
+  const rawText = extractTextPart(buffer).replace(/\r\n/g, "\n");
+  const bodyEmails = findBodyEmails(rawText);
+  const text = cleanMessageText(rawText);
 
   return {
     file,
@@ -238,8 +258,21 @@ async function readMessage(file) {
     date,
     from,
     text: text || "(Message vide ou pièce jointe non textuelle.)",
+    bodyEmails,
     key: conversationKey(subject),
   };
+}
+
+function renderBodyEmailReport(messages) {
+  const withEmails = messages.filter((message) => message.bodyEmails.length > 0);
+  return `# Adresses email repérées dans les corps de messages
+
+Ce rapport liste les messages dont le corps contenait au moins une adresse email avant anonymisation. Les adresses ne sont pas reproduites en clair.
+
+Total : ${withEmails.length} messages concernés.
+
+${withEmails.map((message) => `- ${formatDate(message.date)} · ${message.subject} · ${message.bodyEmails.length} adresse${message.bodyEmails.length > 1 ? "s" : ""} · ${path.relative(ROOT, message.file)}`).join("\n")}
+`;
 }
 
 function renderNav(conversations, currentSlug = "") {
@@ -374,6 +407,8 @@ ${conversation.messages.map(renderMessage).join("\n")}`;
     sourceMessages: messages.length,
     conversations: conversations.length,
   }, null, 2)}\n`, "utf8");
+
+  await writeFile(path.join(ROOT, "body-email-occurrences.md"), renderBodyEmailReport(messages), "utf8");
 
   console.log(`Site généré : ${messages.length} messages, ${conversations.length} conversations.`);
 }

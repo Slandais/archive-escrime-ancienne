@@ -1,5 +1,8 @@
 body {
   min-height: 100vh;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 .menu-toggle {
@@ -77,9 +80,11 @@ body {
 }
 
 .archive-main {
-  max-width: 72rem;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding-top: 4.75rem;
+  padding-right: 0;
+  padding-left: 0;
 }
 
 .hero,
@@ -125,7 +130,7 @@ body {
 
 .message-panel {
   margin: 1.25rem 0;
-  padding: 1rem;
+  padding: 1rem 0;
 }
 
 .message-panel h2 {
@@ -151,7 +156,7 @@ body {
 
 .message-panel pre {
   max-height: none;
-  padding: 1rem;
+  padding: 1rem 0;
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-word;
@@ -178,5 +183,6 @@ body {
   .archive-main {
     margin-left: 24rem;
     padding-top: 2rem;
+    width: calc(100% - 24rem);
   }
 }
