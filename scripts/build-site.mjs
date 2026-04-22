@@ -11,6 +11,7 @@ const AUTHOR = "Simon LANDAIS pour la FFAMHE";
 const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 const EMAIL_PLACEHOLDER = "[adresse email anonymisée]";
 const YAHOO_FOOTER_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation et de la Charte sur la vie priv[ée]e[\s\S]{0,260}?http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html et[\s\S]{0,160}?http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html[>\s]*/gi;
+const YAHOO_FOOTER_SHORT_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation et de la Charte sur la vie priv[ée]e\.[>\s]*/gi;
 
 const decoderCache = new Map();
 
@@ -212,6 +213,7 @@ function anonymizeEmails(value) {
 function cleanMessageText(value) {
   return anonymizeEmails(value)
     .replace(YAHOO_FOOTER_REGEX, "\n")
+    .replace(YAHOO_FOOTER_SHORT_REGEX, "\n")
     .replace(/\n{4,}/g, "\n\n\n")
     .trim();
 }
