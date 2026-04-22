@@ -9,6 +9,7 @@ const OUT_DIR = path.join(ROOT, "dist");
 const OUT_CONVERSATIONS = path.join(OUT_DIR, "conversations");
 const TITLE = "Archive Mailing-List Escrime Ancienne - 2002 à 2011";
 const AUTHOR = "Simon LANDAIS pour la FFAMHE";
+const BUILD_MODES = new Set(["partial", "full"]);
 const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 const EMAIL_PLACEHOLDER_REGEX = /<?\s*\[adresse email anonymis(?:ée|Ã©e|ÃƒÂ©e)\]\s*>?/gi;
 const YAHOO_FOOTER_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation et de la Charte sur la vie priv[ée]e[\s\S]{0,260}?http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html et[\s\S]{0,160}?http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html[>\s]*/gi;
@@ -267,6 +268,28 @@ function formatDate(date) {
   }).format(date);
 }
 
+function parseBuildMode(argv) {
+  let mode = "partial";
+  for (const arg of argv) {
+    if (arg === "--full" || arg === "--total" || arg === "--mode=full" || arg === "--mode=total") {
+      mode = "full";
+      continue;
+    }
+    if (arg === "--partial" || arg === "--partiel" || arg === "--mode=partial" || arg === "--mode=partiel") {
+      mode = "partial";
+      continue;
+    }
+    if (arg.startsWith("--mode=")) {
+      const value = arg.slice("--mode=".length);
+      throw new Error(`Mode de build inconnu : ${value}. Utiliser "partial" ou "full".`);
+    }
+  }
+  if (!BUILD_MODES.has(mode)) {
+    throw new Error(`Mode de build inconnu : ${mode}.`);
+  }
+  return mode;
+}
+
 async function listEmlFiles(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   const files = [];
@@ -353,9 +376,8 @@ function renderMessage(message, index) {
   <header>
     <h2>${escapeHtml(message.subject)}</h2>
     <dl>
-      <div><dt>Auteur</dt><dd>${escapeHtml(message.from)}</dd></div>
-      <div><dt>Date</dt><dd>${escapeHtml(formatDate(message.date))}</dd></div>
-      <div><dt>Source</dt><dd>${escapeHtml(path.relative(ROOT, message.file))}</dd></div>
+      <div><dd>${escapeHtml(message.from)}</dd></div>
+      <div><dd>${escapeHtml(formatDate(message.date))}</dd></div>
     </dl>
   </header>
   <pre>${escapeHtml(message.text)}</pre>
@@ -363,9 +385,14 @@ function renderMessage(message, index) {
 }
 
 async function main() {
-  await rm(OUT_DIR, { recursive: true, force: true });
+  const buildMode = parseBuildMode(process.argv.slice(2));
+  const isFullBuild = buildMode === "full";
+
+  if (isFullBuild) {
+    await rm(OUT_DIR, { recursive: true, force: true });
+  }
   await mkdir(OUT_CONVERSATIONS, { recursive: true });
-  await cp(path.join(ROOT, "assets"), path.join(OUT_DIR, "assets"), { recursive: true });
+  await cp(path.join(ROOT, "assets"), path.join(OUT_DIR, "assets"), { recursive: true, force: true });
 
   const files = await listEmlFiles(SOURCE_DIR);
   const messages = (await Promise.all(files.map(readMessage)))
@@ -395,7 +422,9 @@ async function main() {
     conversation.slug = `${String(index + 1).padStart(4, "0")}-${slugify(conversation.title)}`;
   });
 
-  const nav = renderNav(conversations);
+  const conversationsToBuild = isFullBuild ? conversations : conversations.slice(0, 1);
+  const generatedMessages = conversationsToBuild.reduce((total, conversation) => total + conversation.messages.length, 0);
+  const nav = renderNav(conversationsToBuild);
   const indexBody = `    <header class="hero">
       <p>Archives consultables en HTML statique</p>
       <h1>${TITLE}</h1>
@@ -403,10 +432,10 @@ async function main() {
         <label for="conversation-search">Rechercher une conversation</label>
         <input id="conversation-search" type="search" placeholder="Sujet, date, nombre de messages">
       </form>
-      <p>${messages.length} messages regroupés en ${conversations.length} conversations.</p>
+      <p>${generatedMessages} messages regroupés en ${conversationsToBuild.length} conversations.</p>
     </header>
     <section class="conversation-list" data-conversation-list>
-${conversations.map((conversation) => `      <article data-search="${escapeHtml(`${conversation.title} ${formatDate(conversation.firstDate)} ${conversation.messages.length}`.toLowerCase())}">
+${conversationsToBuild.map((conversation) => `      <article data-search="${escapeHtml(`${conversation.title} ${formatDate(conversation.firstDate)} ${conversation.messages.length}`.toLowerCase())}">
         <h2><a href="conversations/${conversation.slug}.html">${escapeHtml(conversation.title)}</a></h2>
         <p>${formatDate(conversation.firstDate)} · ${conversation.messages.length} message${conversation.messages.length > 1 ? "s" : ""}</p>
       </article>`).join("\n")}
@@ -420,9 +449,9 @@ ${conversations.map((conversation) => `      <article data-search="${escapeHtml(
     relative: ".",
   }), "utf8");
 
-  for (const conversation of conversations) {
-    const previous = conversations[conversation.index - 1];
-    const next = conversations[conversation.index + 1];
+  for (const conversation of conversationsToBuild) {
+    const previous = isFullBuild ? conversations[conversation.index - 1] : null;
+    const next = isFullBuild ? conversations[conversation.index + 1] : null;
     const body = `    <header class="conversation-header">
       <p>${formatDate(conversation.firstDate)} · ${conversation.messages.length} message${conversation.messages.length > 1 ? "s" : ""}</p>
       <h1>${escapeHtml(conversation.title)}</h1>
@@ -436,7 +465,7 @@ ${conversation.messages.map(renderMessage).join("\n")}`;
       title: `${conversation.title} · ${TITLE}`,
       description: `Conversation "${conversation.title}" de la mailing-list Escrime Ancienne.`,
       body,
-      nav: renderNav(conversations, conversation.slug),
+      nav: renderNav(conversationsToBuild, conversation.slug),
       relative: "..",
     }), "utf8");
   }
@@ -445,17 +474,22 @@ ${conversation.messages.map(renderMessage).join("\n")}`;
     title: TITLE,
     author: AUTHOR,
     generatedAt: new Date().toISOString(),
+    buildMode,
     sourceMessages: messages.length,
     conversations: conversations.length,
+    generatedMessages,
+    generatedConversations: conversationsToBuild.length,
   }, null, 2)}\n`, "utf8");
 
-  await writeFile(path.join(OUT_DIR, "body-email-occurrences.md"), renderBodyEmailReport(messages), "utf8");
+  if (isFullBuild) {
+    await writeFile(path.join(OUT_DIR, "body-email-occurrences.md"), renderBodyEmailReport(messages), "utf8");
+  }
   await writeFile(path.join(OUT_DIR, "vercel.json"), `${JSON.stringify({
     buildCommand: null,
     outputDirectory: ".",
   }, null, 2)}\n`, "utf8");
 
-  console.log(`Site généré : ${messages.length} messages, ${conversations.length} conversations.`);
+  console.log(`Site généré en mode ${buildMode} : ${messages.length} messages, ${conversationsToBuild.length}/${conversations.length} conversations.`);
 }
 
 main().catch((error) => {

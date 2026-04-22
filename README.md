@@ -23,6 +23,15 @@ Depuis la racine du dépôt :
 node scripts/build-site.mjs
 ```
 
+Par defaut, le build est partiel : il regenere la page d'accueil, la premiere
+conversation et leurs dependances, sans supprimer les fichiers deja generes pour
+les autres conversations. Pour regenerer toutes les conversations, il faut
+demander explicitement un build total :
+
+```bash
+node scripts/build-site.mjs --full
+```
+
 Le deploiement Vercel utilise uniquement la sortie `dist/`.
 
 ```bash

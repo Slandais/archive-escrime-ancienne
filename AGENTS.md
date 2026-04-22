@@ -10,6 +10,7 @@ Le titre est "Archive Mailing-List Escrime Ancienne - 2004 à 2011"
 - Garder les modifications petites, lisibles et faciles a relire.
 - Verifier l'etat Git avant et apres les changements importants.
 - Ne pas ajouter les gros fichiers binaires ou archives au suivi Git sans confirmation.
+- Pour les actions courantes, lancer uniquement un build partiel du site. Le build partiel est le comportement par defaut : il genere ou met a jour la page d'accueil, la premiere conversation et leurs dependances, sans supprimer les fichiers deja generes pour les autres conversations. Ne lancer un build total que sur demande explicite.
 
 ## Git
 
