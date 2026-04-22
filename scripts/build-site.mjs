@@ -1,17 +1,29 @@
 import { Buffer } from "node:buffer";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { TextDecoder } from "node:util";
 
 const ROOT = process.cwd();
 const SOURCE_DIR = path.join(ROOT, "ML escrime_medievale");
-const OUT_CONVERSATIONS = path.join(ROOT, "conversations");
+const OUT_DIR = path.join(ROOT, "dist");
+const OUT_CONVERSATIONS = path.join(OUT_DIR, "conversations");
 const TITLE = "Archive Mailing-List Escrime Ancienne - 2002 à 2011";
 const AUTHOR = "Simon LANDAIS pour la FFAMHE";
 const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
-const EMAIL_PLACEHOLDER = "[adresse email anonymisée]";
+const EMAIL_PLACEHOLDER_REGEX = /<?\s*\[adresse email anonymis(?:ée|Ã©e|ÃƒÂ©e)\]\s*>?/gi;
 const YAHOO_FOOTER_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation et de la Charte sur la vie priv[ée]e[\s\S]{0,260}?http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html et[\s\S]{0,160}?http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html[>\s]*/gi;
 const YAHOO_FOOTER_SHORT_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation et de la Charte sur la vie priv[ée]e\.[>\s]*/gi;
+const YAHOO_FOOTER_LINKED_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,620}?Charte sur la vie[\s\S]{0,180}?priv[ée]e\.?[>\s]*/gi;
+
+const YAHOO_UNSUBSCRIBE_DUPLICATE_REGEX = /\n?[>\t ]*Pour vous d(?:\u00e9|Ã©)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n[>\t ]*(?:\[[^\]\r\n]*adresse email[^\]\r\n]*\])?[ \t]*)?\r?\n[>\t ]*Pour vous d(?:\u00e9|Ã©)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n[>\t ]*(?:\[[^\]\r\n]*adresse email[^\]\r\n]*\])?[ \t]*)?/gi;
+const YAHOO_UNSUBSCRIBE_LINE_DUPLICATE_REGEX = /\n?(?:[>\t ]*Pour vous d(?:\u00e9|Ã©)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n|$)){2,}/gi;
+
+const YAHOO_MAIL_PROMO_REGEX = new RegExp(
+  String.raw`\n?[>\s]*(?:-{10,}[>\s]*(?:\r?\n[>\s]*)?)?Do You ` +
+    String.raw`Yahoo!\? -- Une adresse @yahoo\.fr gratuite et en fran(?:ç|Ã§)ais ![>\s]*(?:\r?\n[>\s]*(?:<[^>\r\n]+>)?)?Testez le nouveau ` +
+    String.raw`Yahoo! Mail(?:\s*<[^>\r\n]+>)?[>\s]*`,
+  "gi",
+);
 
 const decoderCache = new Map();
 
@@ -207,13 +219,37 @@ function escapeHtml(value) {
 }
 
 function anonymizeEmails(value) {
-  return value.replace(EMAIL_REGEX, EMAIL_PLACEHOLDER);
+  return value.replace(EMAIL_REGEX, "");
+}
+
+function removeEmailPlaceholders(value) {
+  return value
+    .replace(EMAIL_PLACEHOLDER_REGEX, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+(\r?\n)/g, "$1")
+    .trim();
+}
+
+function cleanAuthor(value) {
+  return removeEmailPlaceholders(anonymizeEmails(value))
+    .replace(/\s*<>\s*/g, "")
+    .replace(/^"([^"]+)"$/g, "$1")
+    .replace(/"([^"]+)"/g, "$1")
+    .replace(/^"+$/g, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
 }
 
 function cleanMessageText(value) {
-  return anonymizeEmails(value)
+  return removeEmailPlaceholders(anonymizeEmails(value)
+    .replace(YAHOO_UNSUBSCRIBE_DUPLICATE_REGEX, "\n")
     .replace(YAHOO_FOOTER_REGEX, "\n")
     .replace(YAHOO_FOOTER_SHORT_REGEX, "\n")
+    .replace(YAHOO_FOOTER_LINKED_REGEX, "\n")
+    .replace(YAHOO_MAIL_PROMO_REGEX, "\n")
+    .replace(/\n{4,}/g, "\n\n\n")
+    .trim())
+    .replace(YAHOO_UNSUBSCRIBE_LINE_DUPLICATE_REGEX, "\n")
     .replace(/\n{4,}/g, "\n\n\n")
     .trim();
 }
@@ -248,7 +284,7 @@ async function readMessage(file) {
   const headers = parseHeaders(rawHeaders);
   const subject = decodeWords(header(headers, "subject"));
   const date = new Date(header(headers, "date"));
-  const from = anonymizeEmails(decodeWords(header(headers, "from")).replace(/\s+/g, " ").trim()) || "Auteur inconnu";
+  const from = cleanAuthor(decodeWords(header(headers, "from")).replace(/\s+/g, " ").trim()) || "Auteur inconnu";
   const rawText = extractTextPart(buffer).replace(/\r\n/g, "\n");
   const bodyEmails = findBodyEmails(rawText);
   const text = cleanMessageText(rawText);
@@ -315,7 +351,7 @@ ${body}
 function renderMessage(message, index) {
   return `<article class="message-panel" id="message-${index + 1}">
   <header>
-    <h2>${escapeHtml(message.originalSubject)}</h2>
+    <h2>${escapeHtml(message.subject)}</h2>
     <dl>
       <div><dt>Auteur</dt><dd>${escapeHtml(message.from)}</dd></div>
       <div><dt>Date</dt><dd>${escapeHtml(formatDate(message.date))}</dd></div>
@@ -327,7 +363,10 @@ function renderMessage(message, index) {
 }
 
 async function main() {
+  await rm(OUT_DIR, { recursive: true, force: true });
   await mkdir(OUT_CONVERSATIONS, { recursive: true });
+  await cp(path.join(ROOT, "assets"), path.join(OUT_DIR, "assets"), { recursive: true });
+
   const files = await listEmlFiles(SOURCE_DIR);
   const messages = (await Promise.all(files.map(readMessage)))
     .sort((a, b) => (a.date - b.date) || a.subject.localeCompare(b.subject, "fr"));
@@ -373,7 +412,7 @@ ${conversations.map((conversation) => `      <article data-search="${escapeHtml(
       </article>`).join("\n")}
     </section>`;
 
-  await writeFile(path.join(ROOT, "index.html"), pageShell({
+  await writeFile(path.join(OUT_DIR, "index.html"), pageShell({
     title: TITLE,
     description: "Archives HTML de la mailing-list Escrime Ancienne de 2002 à 2011.",
     body: indexBody,
@@ -402,7 +441,7 @@ ${conversation.messages.map(renderMessage).join("\n")}`;
     }), "utf8");
   }
 
-  await writeFile(path.join(ROOT, "site-data.json"), `${JSON.stringify({
+  await writeFile(path.join(OUT_DIR, "site-data.json"), `${JSON.stringify({
     title: TITLE,
     author: AUTHOR,
     generatedAt: new Date().toISOString(),
@@ -410,7 +449,11 @@ ${conversation.messages.map(renderMessage).join("\n")}`;
     conversations: conversations.length,
   }, null, 2)}\n`, "utf8");
 
-  await writeFile(path.join(ROOT, "body-email-occurrences.md"), renderBodyEmailReport(messages), "utf8");
+  await writeFile(path.join(OUT_DIR, "body-email-occurrences.md"), renderBodyEmailReport(messages), "utf8");
+  await writeFile(path.join(OUT_DIR, "vercel.json"), `${JSON.stringify({
+    buildCommand: null,
+    outputDirectory: ".",
+  }, null, 2)}\n`, "utf8");
 
   console.log(`Site généré : ${messages.length} messages, ${conversations.length} conversations.`);
 }
