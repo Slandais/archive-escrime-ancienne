@@ -1,0 +1,182 @@
+body {
+  min-height: 100vh;
+}
+
+.menu-toggle {
+  position: fixed;
+  top: .75rem;
+  left: .75rem;
+  z-index: 40;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border-radius: 6px;
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  width: min(22rem, 86vw);
+  overflow-y: auto;
+  padding: 1rem;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  transform: translateX(-105%);
+  transition: transform .18s ease;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.brand {
+  display: block;
+  margin: .25rem 0 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.sidebar nav a {
+  display: block;
+  margin: 0 0 .35rem;
+  padding: .5rem .6rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.sidebar nav a:hover,
+.sidebar nav a.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.sidebar nav span,
+.sidebar nav small {
+  display: block;
+}
+
+.sidebar nav small {
+  margin-top: .15rem;
+  color: var(--text-light);
+  font-size: .82rem;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  background: rgb(0 0 0 / 42%);
+}
+
+.overlay.open {
+  display: block;
+}
+
+.archive-main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding-top: 4.75rem;
+}
+
+.hero,
+.conversation-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.hero h1,
+.conversation-header h1 {
+  max-width: 62rem;
+}
+
+.search {
+  max-width: 38rem;
+  margin: 1.5rem 0;
+}
+
+.conversation-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.conversation-list article,
+.message-panel {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--accent-bg);
+}
+
+.conversation-list article {
+  margin: 0;
+  padding: 1rem;
+}
+
+.conversation-list h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  line-height: 1.35;
+}
+
+.message-panel {
+  margin: 1.25rem 0;
+  padding: 1rem;
+}
+
+.message-panel h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+
+.message-panel dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  gap: .75rem;
+}
+
+.message-panel dt {
+  color: var(--text-light);
+  font-size: .85rem;
+}
+
+.message-panel dd {
+  margin: .15rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.message-panel pre {
+  max-height: none;
+  padding: 1rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--bg);
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 70rem) {
+  .menu-toggle,
+  .overlay {
+    display: none;
+  }
+
+  .sidebar {
+    transform: none;
+  }
+
+  .archive-main {
+    margin-left: 24rem;
+    padding-top: 2rem;
+  }
+}
