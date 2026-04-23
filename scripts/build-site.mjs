@@ -12,6 +12,7 @@ const TITLE = "Archive Mailing-List Escrime Ancienne - 2003 à 2011";
 const AUTHOR = "Simon LANDAIS pour la FFAMHE";
 const BUILD_MODES = new Set(["partial", "full"]);
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const ONE_YEAR_MS = 365 * ONE_DAY_MS;
 const ARCHIVE_START_DATE = new Date("2003-01-01T00:00:00+01:00");
 const ARCHIVE_2004_START_DATE = new Date("2004-01-01T00:00:00+01:00");
 const DISPLAY_NAME_REPLACEMENTS = new Map([
@@ -103,6 +104,24 @@ const PARTIAL_BUILD_CONVERSATION_KEYS = new Set([
   "commande collective",
   "commande collectivee artistique historique er",
   "stage d escrime ancienne a schiltigheim",
+  "stage d escrime",
+  "dijon",
+  "talhoffer",
+  "merci",
+  "stage 2004",
+  "stage 2007",
+  "st didier 2003",
+  "st didier 2010",
+]);
+const CONVERSATION_KEYS_SPLIT_BY_YEAR = new Set([
+  "stage",
+  "st didier",
+]);
+const CONVERSATION_KEYS_SPLIT_BY_GAP = new Set([
+  "dijon",
+  "stage d escrime",
+  "talhoffer",
+  "merci",
 ]);
 const CANONICAL_SUBJECT_RULES = [
   {
@@ -180,6 +199,14 @@ const CANONICAL_SUBJECT_RULES = [
   {
     title: "Dijon 2007 - 6e Rencontres Internationales d'Arts Martiaux Historiques Européens",
     pattern: /^dijon20076erencontresinternationalesdartsmartiauxhistoriqueseuropeens$/,
+  },
+  {
+    title: "dijon 2005",
+    pattern: /^.*dijon2005.*$/,
+  },
+  {
+    title: "Dijon 2007 - 6e Rencontres Internationales d'Arts Martiaux Historiques Européens",
+    pattern: /^dijon2007.*$/,
   },
   {
     title: "Ott’ez-moi d’un doute",
@@ -405,6 +432,10 @@ const CANONICAL_SUBJECT_RULES = [
     title: "Stage d'escrime ancienne à Schiltigheim",
     pattern: /^stagedescrimeancienneaschiltigheim$/,
   },
+  {
+    title: "Refonte du site de l'ardamhe et f\u00e9d\u00e9ration",
+    pattern: /^(?:refontedusitedelardamhe(?:etfederation)?|federationssportives)$/,
+  },
 ];
 const EXACT_CANONICAL_SUBJECTS = new Map([
   ["demie épée par ringeck", "demie épée par ringeck"],
@@ -414,6 +445,32 @@ const EXACT_CANONICAL_SUBJECTS = new Map([
   ["__re :_escrime_artistique_levallois", "_escrime_artistiqu e_levallois"],
   ["j'en ai marre", "j'en ai marre"],
   ["ot re: j'en ai marre", "j'en ai marre"],
+  ["recherche escrime artistique sur ...", "Recherche escrime artistique sur Lyon"],
+  ["refonte du site de l'ardamhe", "Refonte du site de l'ardamhe et fédération"],
+  ["refonte du site de l'ardamhe et fédération", "Refonte du site de l'ardamhe et fédération"],
+  ["fédérations sportives", "Refonte du site de l'ardamhe et fédération"],
+  ["debutant cherche aide ( teste envoi message)", "debutant cherche aide"],
+  ["parade au quillons (assez long)", "parade au quillons"],
+  ["l'étau se re sserre", "L'étau se resserre ?"],
+  ["énarmes au xvm e", "énarmes au XVme"],
+  ["liectenauer", "Liechtenauer"],
+  ["liechtnauer - streychen", "Liechtnauer - steychen"],
+  ["scheitel & krump part2", "Scheitel & krump"],
+  ["scheitel & krump et lapin compris", "Scheitel & krump"],
+  ["star wars:episode - scene de brette. attentiion aux spoilers", "Star Wars:Episode - scene de brette"],
+  ["article escrime \"médiévale\", les 4 vents & les stages", "article escrime \"médiévale\""],
+  ["oooops : re : publication", "Publication"],
+  ["publication ii", "Publication"],
+  ["y aura-t-il un dijon 2005 ????", "dijon 2005"],
+  ["site dijon 2005", "dijon 2005"],
+  ["du nouveau sur dijon 2005", "dijon 2005"],
+  ["correction dijon 2005", "dijon 2005"],
+  ["dijon 2005, dvd ?", "dijon 2005"],
+  ["le site sur dijon 2005", "dijon 2005"],
+  ["dijon 2005 : encore plein de place !", "dijon 2005"],
+  ["dijon 2005 : info", "dijon 2005"],
+  ["dijon 2005 / le materiel", "dijon 2005"],
+  ["oui ! des info sur dijon 2005 !", "dijon 2005"],
 ]);
 const MOJIBAKE_REPLACEMENTS = new Map([
   ["\u00c3\u20ac", "À"],
@@ -463,6 +520,8 @@ const YAHOO_UNSUBSCRIBE_LINE_DUPLICATE_REGEX = /\n?(?:[>\t ]*Pour vous d(?:\u00e
 const YAHOO_GROUP_LINKS_REGEX = /\n?[>\t <]*(?:&lt;\*&gt;\s*)?(?:[a-c]\.\.\s*)?Liens Yahoo!\s*Groupes[>\t <]*(?:\r?\n[>\t <]*(?:&lt;\*&gt;\s*)?(?:[a-c]\.\.\s*)?)*[\s\S]{0,80}?Pour consulter votre groupe en ligne, acc(?:e|\u00c3\u00a8)dez [^:\r\n]{0,20}:[ \t]*(?:\r?\n[>\t <]*(?:&lt;\*&gt;\s*)?(?:http:\/\/fr\.groups\.yahoo\.com\/group\/escrime_medievale\/)?[ \t]*)?[\s\S]{0,120}?Pour vous d(?:\u00e9|\u00c3\u00a9|\u00c3\u0192\u00c2\u00a9|\u00c3\u0192\u00c6\u2019\u00c3\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a9)sincrire de ce groupe, envoyez un mail [^:\r\n]{0,20}:[ \t]*(?:\r?\n[>\t <]*(?:&lt;\*&gt;\s*)?[ \t]*)?[\s\S]{0,120}?L'utilisation de Yahoo!\s*Groupes est soumise [\s\S]{0,160}?http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html[>\t <]*/gi;
 
 const YAHOO_TRUE_SWITCH_PROMO_REGEX = /\n?[>\s-]*Ne gardez plus qu'une seule adresse mail ?! Copiez vos mails(?:[\s\S]{0,140}?)vers Yahoo!\s*Mail(?:\s*<\/pre>)?[>\s]*/gi;
+const YAHOO_ANSWERS_SIGNATURE_REGEX = /\n?[>\t ]*_{50,}[=\t ]*(?:\r?\n[>\t =]*)+(?:<?\s*)?http:\/\/fr\.answers\.yahoo\.com(?:\s*<http:\/\/fr\.answers\.yahoo\.com>)?[>\t .]*/gi;
+const YAHOO_HOMEPAGE_PROMO_REGEX = /\n?[>\t -]*-{20,}[>\t ]*(?:\r?\n[>\t ]*)?Faites de Yahoo! votre page d'accueil sur le web pour retrouver directement vos services pr(?:é|Ã©)f(?:é|Ã©)r(?:é|Ã©)s ?: v(?:é|Ã©)rifiez vos nouveaux mails, lancez vos recherches et suivez l'actualit(?:é|Ã©) en temps r(?:é|Ã©)el\. Cliquez ici\.[>\t ]*/gi;
 
 const YAHOO_AUDIO_PROMO_REGEX = /\n?[>\t -]*(?:-{10,}[ \t]*(?:\r?\n[>\t ]*)?)?Appel audio GRATUIT partout dans le monde avec le nouveau Yahoo!\s*Messenger[>\t ]*(?:\r?\n[>\t ]*)?T(?:é|\u00c3\u00a9)l(?:é|\u00c3\u00a9)chargez le ici ![>\t ]*/gi;
 
@@ -695,13 +754,23 @@ function cleanSubject(subject) {
   return knownCanonicalSubject(cleaned) || cleaned || "Sans sujet";
 }
 
-function conversationKey(subject) {
-  return cleanSubject(subject)
+function conversationKey(subject, date = null) {
+  const key = cleanSubject(subject)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim() || "sans sujet";
+
+  if (
+    date
+    && Number.isFinite(date.getTime())
+    && CONVERSATION_KEYS_SPLIT_BY_YEAR.has(key)
+  ) {
+    return `${key} __year_${date.getUTCFullYear()}`;
+  }
+
+  return key;
 }
 
 function slugify(text) {
@@ -776,6 +845,29 @@ function mergeConversationItems(conversations) {
     })),
     report,
   };
+}
+
+function splitConversationMessages(items) {
+  if (items.length === 0) return [];
+
+  const sortedItems = [...items].sort((a, b) => (a.date - b.date) || a.file.localeCompare(b.file));
+  const key = sortedItems[0].key ?? "";
+  if (!CONVERSATION_KEYS_SPLIT_BY_GAP.has(key)) {
+    return [sortedItems];
+  }
+
+  const groups = [[sortedItems[0]]];
+  for (let index = 1; index < sortedItems.length; index += 1) {
+    const previous = sortedItems[index - 1];
+    const current = sortedItems[index];
+    if ((current.date - previous.date) > ONE_YEAR_MS) {
+      groups.push([current]);
+      continue;
+    }
+    groups.at(-1).push(current);
+  }
+
+  return groups;
 }
 
 function escapeHtml(value) {
@@ -860,6 +952,99 @@ function removeYahooMarkerLines(value) {
     .join("\n");
 }
 
+function removeYahooHomepagePromoLines(value) {
+  const lines = value.split(/\r?\n/);
+  const kept = [];
+
+  for (const line of lines) {
+    const normalized = line.trim();
+    const isHomepagePromo =
+      /Faites de Yahoo! votre page d'accueil sur le web pour retrouver directement vos services pr(?:é|Ã©)f(?:é|Ã©)r(?:é|Ã©)s/i.test(normalized)
+      || /v(?:é|Ã©)rifiez vos nouveaux mails, lancez vos recherches et suivez l'actualit(?:é|Ã©) en temps r(?:é|Ã©)el/i.test(normalized);
+
+    if (isHomepagePromo) {
+      if (/^-{20,}$/.test(kept.at(-1)?.trim() ?? "")) {
+        kept.pop();
+      }
+      continue;
+    }
+
+    kept.push(line);
+  }
+
+  return kept.join("\n");
+}
+
+function removeYahooPromoLines(value) {
+  const lines = value.split(/\r?\n/);
+  const kept = [];
+  let skipNextSeparator = false;
+
+  for (const line of lines) {
+    const normalized = line.trim();
+    const isSeparator = /^[>\t ]*[-_=*]{5,}[>\t ]*$/.test(normalized);
+    const isYahooContactReference =
+      /mailto:/i.test(normalized)
+      || /(?:^|[\s<])[\w.%+-]+\s*@\s*yahoo\.(?:com|fr)\b/i.test(normalized)
+      || /arrobase/i.test(normalized)
+      || /[_(]à[)_]/i.test(normalized);
+    const isYahooPromo =
+      /Sponsor Yahoo!\s*Groupes/i.test(normalized)
+      || /L'utilisation (?:du service )?Yahoo!\s*Groupes est soumise/i.test(normalized)
+      || /Modifier vos options par le Web .*Compte Yahoo! requis/i.test(normalized)
+      || /Conditions d['’]utilisation de Yahoo!\s*Groupes/i.test(normalized)
+      || /^(?:&gt;|>|\s)*Yahoo!\s*360/i.test(normalized)
+      || /^(?:&gt;|>|\s)*Yahoo!\s*Groupes\.?$/i.test(normalized)
+      || /pas r(?:é|Ã©)pondre à ce message mais sur Yahoo!\s*Groupes/i.test(normalized)
+      || /Do You Yahoo!\?/i.test(normalized)
+      || /Do you Yahoo!\?/i.test(normalized)
+      || /Une adresse @yahoo\.fr gratuite et en fran/i.test(normalized)
+      || /Dialoguez en direct avec vos amis grâce à Yahoo!\s*Messenger/i.test(normalized)
+      || /Le nouveau Yahoo!\s*Messenger est arrivé/i.test(normalized)
+      || /Appel audio GRATUIT partout dans le monde avec le nouveau Yahoo!\s*Messenger/i.test(normalized)
+      || /Nouveau ?: téléphonez moins cher avec Yahoo!\s*Messenger/i.test(normalized)
+      || /Créez votre adresse sur http:\/\/mail\.yahoo\.fr/i.test(normalized)
+      || /Ne gardez plus qu'une seule adresse mail/i.test(normalized)
+      || /Lèche-vitrine ou lèche-écran \? Yahoo!\s*Magasinage/i.test(normalized)
+      || /Personnalisez Yahoo! à votre goût Essayez Mon Yahoo!/i.test(normalized)
+      || /Le tout nouveau Yahoo!\s*Courriel/i.test(normalized)
+      || /Faites des appels de PC à PC .*Yahoo! Québec Messenger avec Voix/i.test(normalized)
+      || /Yahoo! Québec Messenger avec Voix/i.test(normalized)
+      || /Volez la vedette sur Yahoo! Québec Avatars/i.test(normalized)
+      || /vedette sur Yahoo! Québec Avatars/i.test(normalized)
+      || /Devenez un meilleur amigo grâce à Yahoo!\s*Courriel/i.test(normalized)
+      || /Yahoo! Finance: Get your refund fast by filing online/i.test(normalized)
+      || /Yahoo! Finance Tax Center - File online\. File on time\./i.test(normalized)
+      || /Yahoo! Search - Find what you/i.test(normalized)
+      || /Yahoo! Small Business \$15K Web Design Giveaway - Enter today/i.test(normalized)
+      || /Need a vacation\? Get great deals to amazing places on Yahoo! Travel\./i.test(normalized)
+      || /Shape Yahoo! in your own image\. Join our Network Research Panel today!/i.test(normalized)
+      || /Check out the hottest 2008 models today at Yahoo! Autos\./i.test(normalized)
+      || /Faites de Yahoo! votre page d'accueil/i.test(normalized)
+      || /https?:\/\/(?:[^ \t>]*\.)?yahoo\.(?:com|fr)\b/i.test(normalized)
+      || /<https?:\/\/(?:[^ \t>]*\.)?yahoo\.(?:com|fr)\b/i.test(normalized)
+      || (!isYahooContactReference && (/Yahoo!/i.test(normalized) || /(?:^|[\s<])[^@\s<]*yahoo\.(?:com|fr)\b/i.test(normalized)));
+
+    if (isYahooPromo) {
+      if (/^-{5,}$/.test(kept.at(-1)?.trim() ?? "")) {
+        kept.pop();
+      }
+      skipNextSeparator = true;
+      continue;
+    }
+
+    if (skipNextSeparator && isSeparator) {
+      skipNextSeparator = false;
+      continue;
+    }
+
+    skipNextSeparator = false;
+    kept.push(line);
+  }
+
+  return kept.join("\n");
+}
+
 function replaceDisplayNames(value) {
   let result = value;
   for (const [search, replacement] of DISPLAY_NAME_REPLACEMENTS) {
@@ -890,10 +1075,12 @@ function fallbackAuthorFromHeader(value) {
 
 function cleanMessageText(value) {
   const repairedValue = repairMojibakeAccents(value);
-  const cleaned = replaceDisplayNames(removeEmailPlaceholders(anonymizeEmails(removeYahooMarkerLines(removeYahooGroupLinksLines(removeYahooUnsubscribe(repairedValue))))
+  const cleaned = replaceDisplayNames(removeEmailPlaceholders(anonymizeEmails(removeYahooPromoLines(removeYahooMarkerLines(removeYahooGroupLinksLines(removeYahooUnsubscribe(repairedValue)))))
     .replace(YAHOO_UNSUBSCRIBE_REGEX, "\n")
     .replace(YAHOO_GROUP_LINKS_REGEX, "\n")
     .replace(YAHOO_TRUE_SWITCH_PROMO_REGEX, "\n")
+    .replace(YAHOO_ANSWERS_SIGNATURE_REGEX, "\n")
+    .replace(YAHOO_HOMEPAGE_PROMO_REGEX, "\n")
     .replace(YAHOO_AUDIO_PROMO_REGEX, "\n")
     .replace(YAHOO_FOOTER_REGEX, "\n")
     .replace(YAHOO_FOOTER_SHORT_REGEX, "\n")
@@ -902,9 +1089,11 @@ function cleanMessageText(value) {
     .replace(/\n{4,}/g, "\n\n\n")
     .trim()));
 
-  return removeYahooMarkerLines(removeYahooGroupLinksLines(cleaned))
+  return removeYahooPromoLines(removeYahooMarkerLines(removeYahooGroupLinksLines(cleaned)))
     .replace(YAHOO_UNSUBSCRIBE_REGEX, "\n")
     .replace(YAHOO_TRUE_SWITCH_PROMO_REGEX, "\n")
+    .replace(YAHOO_ANSWERS_SIGNATURE_REGEX, "\n")
+    .replace(YAHOO_HOMEPAGE_PROMO_REGEX, "\n")
     .replace(YAHOO_AUDIO_PROMO_REGEX, "\n")
     .replace(/\n{4,}/g, "\n\n\n")
     .trim();
@@ -972,8 +1161,9 @@ async function readMessage(file) {
   const { rawHeaders } = splitHeaderBody(buffer);
   const headers = parseHeaders(rawHeaders);
   const subject = repairMojibakeAccents(decodeWords(header(headers, "subject")));
-  const key = conversationKey(subject);
-  const date = normalizeConversationDate(messageDate(headers), key);
+  const baseKey = conversationKey(subject);
+  const date = normalizeConversationDate(messageDate(headers), baseKey);
+  const key = conversationKey(subject, date);
   const fromHeader = repairMojibakeAccents(decodeWords(header(headers, "from"))).replace(/\s+/g, " ").trim();
   const from = cleanAuthor(fromHeader) || fallbackAuthorFromHeader(fromHeader) || "Auteur inconnu";
   const rawText = extractTextPart(buffer).replace(/\r\n/g, "\n");
@@ -1118,8 +1308,9 @@ async function main() {
     byConversation.get(message.key).push(message);
   }
 
-  let conversations = [...byConversation.values()].map((items, index) => {
-    items.sort((a, b) => (a.date - b.date) || a.file.localeCompare(b.file));
+  let conversations = [...byConversation.values()]
+    .flatMap((items) => splitConversationMessages(items))
+    .map((items, index) => {
     const title = items[0].subject;
     return {
       index,
@@ -1144,12 +1335,22 @@ async function main() {
   const existingSlugsBySuffix = new Map([...existingSlugs].map((slug) => [slugWithoutIndex(slug), slug]));
   const conversationsWithOutputSlugs = isFullBuild
     ? conversations
-    : conversations.map((conversation, index) => ({
-      ...conversation,
-      outputSlug: index === 0
-        ? conversation.slug
-        : existingSlugsBySuffix.get(slugWithoutIndex(conversation.slug)) ?? conversation.slug,
-    }));
+    : (() => {
+      const usedOutputSlugs = new Set();
+      return conversations.map((conversation, index) => {
+        const preferredOutputSlug = index === 0
+          ? conversation.slug
+          : existingSlugsBySuffix.get(slugWithoutIndex(conversation.slug)) ?? conversation.slug;
+        const outputSlug = usedOutputSlugs.has(preferredOutputSlug)
+          ? conversation.slug
+          : preferredOutputSlug;
+        usedOutputSlugs.add(outputSlug);
+        return {
+          ...conversation,
+          outputSlug,
+        };
+      });
+    })();
   const conversationsToBuild = isFullBuild
     ? conversationsWithOutputSlugs
     : conversationsWithOutputSlugs.filter((conversation, index) =>
