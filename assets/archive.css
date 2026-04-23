@@ -1,7 +1,9 @@
 body {
   --content-gutter: 2rem;
   --content-gutter-right: 1rem;
+  --main-top-gap: .5rem;
   --sidebar-width: min(22rem, 86vw);
+  --site-header-height: 4.25rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-height: 100vh;
@@ -45,7 +47,7 @@ body {
 .sidebar {
   box-sizing: border-box;
   position: fixed;
-  inset: 4.25rem auto 0 0;
+  inset: var(--site-header-height) auto 0 0;
   z-index: 30;
   width: var(--sidebar-width);
   overflow-y: auto;
@@ -73,6 +75,27 @@ body {
 .sidebar nav a:hover {
   border-color: var(--accent);
   background: var(--accent-bg);
+}
+
+.sidebar nav a.nav-page-link {
+  border-color: var(--border);
+  background: var(--accent-bg);
+  font-weight: 700;
+}
+
+.sidebar nav a.nav-page-link + a.nav-page-link {
+  margin-bottom: .9rem;
+}
+
+.nav-section-title {
+  margin: .25rem 0 .55rem;
+  padding: .55rem .6rem .35rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-light);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
 .sidebar nav a.active {
@@ -113,7 +136,7 @@ body {
   grid-column: 1 / -1;
   max-width: none;
   margin: 0 var(--content-gutter-right) 0 var(--content-gutter);
-  padding-top: 4.75rem;
+  padding-top: calc(var(--site-header-height) + var(--main-top-gap));
   padding-right: 0;
   padding-left: 0;
 }
@@ -241,8 +264,8 @@ body {
   }
 
   .archive-main {
+    --main-top-gap: 2rem;
     margin-left: calc(22rem + var(--content-gutter));
-    padding-top: 6.25rem;
     width: auto;
   }
 }

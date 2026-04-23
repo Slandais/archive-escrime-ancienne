@@ -42,5 +42,10 @@ depuis la racine du dépôt permet d'utiliser le lien Vercel local
 `archive-escrime-ancienne`.
 
 ```bash
-npx vercel deploy dist --prod --yes
+npx vercel deploy --prod --yes --scope slandais-projects
 ```
+
+Ne pas passer `dist` comme dossier a la commande `vercel deploy` depuis la
+racine : le CLI peut alors le traiter comme un projet Vercel distinct. La
+configuration `vercel.json` a la racine indique deja a Vercel de publier
+`dist/`.
