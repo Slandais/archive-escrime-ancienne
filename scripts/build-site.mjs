@@ -7,24 +7,78 @@ const ROOT = process.cwd();
 const SOURCE_DIR = path.join(ROOT, "ML escrime_medievale");
 const OUT_DIR = path.join(ROOT, "dist");
 const OUT_CONVERSATIONS = path.join(OUT_DIR, "conversations");
-const TITLE = "Archive Mailing-List Escrime Ancienne - 2002 à 2011";
+const TITLE = "Archive Mailing-List Escrime Ancienne - 2003 à 2011";
 const AUTHOR = "Simon LANDAIS pour la FFAMHE";
 const BUILD_MODES = new Set(["partial", "full"]);
+const ARCHIVE_START_DATE = new Date("2003-01-01T00:00:00+01:00");
+const ARCHIVE_2004_START_DATE = new Date("2004-01-01T00:00:00+01:00");
+const DISPLAY_NAME_REPLACEMENTS = new Map([
+  ["Patricia Marain", "Gaëtan Marain"],
+]);
+const AUTHOR_EMAIL_REPLACEMENTS = new Map([
+  ["michael.huber78@free.fr", "Michael Huber"],
+]);
+const FORCED_CONVERSATION_YEARS = new Map([
+  ["annee 2004", 2004],
+  ["waster", 2004],
+]);
+const MOJIBAKE_REPLACEMENTS = new Map([
+  ["\u00c3\u20ac", "À"],
+  ["\u00c3\u201a", "Â"],
+  ["\u00c3\u2021", "Ç"],
+  ["\u00c3\u2030", "É"],
+  ["\u00c3\u02c6", "È"],
+  ["\u00c3\u0160", "Ê"],
+  ["\u00c3\u2039", "Ë"],
+  ["\u00c3\u017d", "Î"],
+  ["\u00c3\u201d", "Ô"],
+  ["\u00c3\u2122", "Ù"],
+  ["\u00c3\u203a", "Û"],
+  ["\u00c3\u0152", "Ü"],
+  ["\u00c3\u2019\u00c2\u00a0", "à"],
+  ["\u00c3\u2019\u00c2\u00a2", "â"],
+  ["\u00c3\u2019\u00c2\u00a7", "ç"],
+  ["\u00c3\u2019\u00c2\u00a9", "é"],
+  ["\u00c3\u2019\u00c2\u00aa", "ê"],
+  ["\u00c3\u2019\u00c2\u00ab", "ë"],
+  ["\u00c2\u00a0", " "],
+  ["\u00c3\u00a0", "à"],
+  ["\u00c3\u00a2", "â"],
+  ["\u00c3\u00a7", "ç"],
+  ["\u00c3\u00a8", "è"],
+  ["\u00c3\u00a9", "é"],
+  ["\u00c3\u00aa", "ê"],
+  ["\u00c3\u00ab", "ë"],
+  ["\u00c3\u00ac", "ì"],
+  ["\u00c3\u00ae", "î"],
+  ["\u00c3\u00af", "ï"],
+  ["\u00c3\u00b4", "ô"],
+  ["\u00c3\u00b9", "ù"],
+  ["\u00c3\u00bb", "û"],
+  ["\u00c3\u00bc", "ü"],
+]);
 const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
-const EMAIL_PLACEHOLDER_REGEX = /<?\s*\[adresse email anonymis(?:ée|Ã©e|ÃƒÂ©e)\]\s*>?/gi;
+const EMAIL_PLACEHOLDER_REGEX = /<?\s*\[adresse email anonymis(?:ée|\u00c3\u00a9e|\u00c3\u0192\u00c2\u00a9e)\]\s*>?/gi;
 const YAHOO_FOOTER_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation et de la Charte sur la vie priv[ée]e[\s\S]{0,260}?http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html et[\s\S]{0,160}?http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html[>\s]*/gi;
 const YAHOO_FOOTER_SHORT_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation et de la Charte sur la vie priv[ée]e\.[>\s]*/gi;
 const YAHOO_FOOTER_LINKED_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,620}?Charte sur la vie[\s\S]{0,180}?priv[ée]e\.?[>\s]*/gi;
 
-const YAHOO_UNSUBSCRIBE_DUPLICATE_REGEX = /\n?[>\t ]*Pour vous d(?:\u00e9|Ã©)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n[>\t ]*(?:\[[^\]\r\n]*adresse email[^\]\r\n]*\])?[ \t]*)?\r?\n[>\t ]*Pour vous d(?:\u00e9|Ã©)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n[>\t ]*(?:\[[^\]\r\n]*adresse email[^\]\r\n]*\])?[ \t]*)?/gi;
-const YAHOO_UNSUBSCRIBE_LINE_DUPLICATE_REGEX = /\n?(?:[>\t ]*Pour vous d(?:\u00e9|Ã©)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n|$)){2,}/gi;
+const YAHOO_UNSUBSCRIBE_REGEX = /\n?[>\t ]*Pour vous d(?:\u00e9|\u00c3\u00a9|\u00c3\u0192\u00c2\u00a9|\u00c3\u0192\u00c6\u2019\u00c3\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a9)sabonner de ce groupe, envoyez un email [^:\r\n]{0,80}:[ \t]*(?:\r?\n[>\t ]*(?:(?:\[[^\]\r\n]*adresse email[^\]\r\n]*\])|(?:[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}))?[ \t]*)?/gi;
+const YAHOO_UNSUBSCRIBE_DUPLICATE_REGEX = /\n?[>\t ]*Pour vous d(?:\u00e9|\u00c3\u00a9)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n[>\t ]*(?:\[[^\]\r\n]*adresse email[^\]\r\n]*\])?[ \t]*)?\r?\n[>\t ]*Pour vous d(?:\u00e9|\u00c3\u00a9)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n[>\t ]*(?:\[[^\]\r\n]*adresse email[^\]\r\n]*\])?[ \t]*)?/gi;
+const YAHOO_UNSUBSCRIBE_LINE_DUPLICATE_REGEX = /\n?(?:[>\t ]*Pour vous d(?:\u00e9|\u00c3\u00a9)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n|$)){2,}/gi;
+
+const YAHOO_GROUP_LINKS_REGEX = /\n?[>\t <]*(?:&lt;\*&gt;\s*)?(?:[a-c]\.\.\s*)?Liens Yahoo!\s*Groupes[>\t <]*(?:\r?\n[>\t <]*(?:&lt;\*&gt;\s*)?(?:[a-c]\.\.\s*)?)*[\s\S]{0,80}?Pour consulter votre groupe en ligne, acc(?:e|\u00c3\u00a8)dez [^:\r\n]{0,20}:[ \t]*(?:\r?\n[>\t <]*(?:&lt;\*&gt;\s*)?(?:http:\/\/fr\.groups\.yahoo\.com\/group\/escrime_medievale\/)?[ \t]*)?[\s\S]{0,120}?Pour vous d(?:\u00e9|\u00c3\u00a9|\u00c3\u0192\u00c2\u00a9|\u00c3\u0192\u00c6\u2019\u00c3\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a9)sincrire de ce groupe, envoyez un mail [^:\r\n]{0,20}:[ \t]*(?:\r?\n[>\t <]*(?:&lt;\*&gt;\s*)?[ \t]*)?[\s\S]{0,120}?L'utilisation de Yahoo!\s*Groupes est soumise [\s\S]{0,160}?http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html[>\t <]*/gi;
+
+const YAHOO_TRUE_SWITCH_PROMO_REGEX = /\n?[>\s-]*Ne gardez plus qu'une seule adresse mail ?! Copiez vos mails(?:[\s\S]{0,140}?)vers Yahoo!\s*Mail(?:\s*<\/pre>)?[>\s]*/gi;
 
 const YAHOO_MAIL_PROMO_REGEX = new RegExp(
   String.raw`\n?[>\s]*(?:-{10,}[>\s]*(?:\r?\n[>\s]*)?)?Do You ` +
-    String.raw`Yahoo!\? -- Une adresse @yahoo\.fr gratuite et en fran(?:ç|Ã§)ais ![>\s]*(?:\r?\n[>\s]*(?:<[^>\r\n]+>)?)?Testez le nouveau ` +
+    String.raw`Yahoo!\? -- Une adresse @yahoo\.fr gratuite et en fran(?:ç|\u00c3\u00a7)ais ![>\s]*(?:\r?\n[>\s]*(?:<[^>\r\n]+>)?)?Testez le nouveau ` +
     String.raw`Yahoo! Mail(?:\s*<[^>\r\n]+>)?[>\s]*`,
   "gi",
 );
+
+const YAHOO_MARKER_LINE_REGEX = /(?:http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html|http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html|Yahoo!\s*Mail|escrime_medievale-unsubscribe@e|^\s*(?:&gt;|>|\s)*,\s*disponibles\s*$)/i;
 
 const decoderCache = new Map();
 
@@ -84,6 +138,30 @@ function addHeader(headers, line) {
 
 function header(headers, name) {
   return headers.get(name.toLowerCase())?.join(" ") ?? "";
+}
+
+function headerValues(headers, name) {
+  return headers.get(name.toLowerCase()) ?? [];
+}
+
+function parseDateHeader(value) {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+function parseReceivedDate(value) {
+  const dateText = value.slice(value.lastIndexOf(";") + 1).trim();
+  return parseDateHeader(dateText);
+}
+
+function messageDate(headers) {
+  const declaredDate = parseDateHeader(header(headers, "date"));
+  const receivedDates = headerValues(headers, "received")
+    .map(parseReceivedDate)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  return declaredDate ?? receivedDates[0] ?? new Date(NaN);
 }
 
 function decodeWords(value) {
@@ -187,7 +265,7 @@ function htmlToText(html) {
 function cleanSubject(subject) {
   return decodeWords(subject)
     .replace(/\[escrime_medievale\]/gi, "")
-    .replace(/^\s*((re|rép|fw|fwd)\s*[:_]\s*)+/gi, "")
+    .replace(/^\s*((re|rép|\u00c3\u00a9p|fw|fwd)\s*[:_]\s*)+/gi, "")
     .replace(/\s+/g, " ")
     .trim() || "Sans sujet";
 }
@@ -219,6 +297,14 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+function repairMojibakeAccents(value) {
+  let result = value;
+  for (const [search, replacement] of MOJIBAKE_REPLACEMENTS) {
+    result = result.replaceAll(search, replacement);
+  }
+  return result;
+}
+
 function anonymizeEmails(value) {
   return value.replace(EMAIL_REGEX, "");
 }
@@ -231,26 +317,104 @@ function removeEmailPlaceholders(value) {
     .trim();
 }
 
+function removeYahooUnsubscribe(value) {
+  return value
+    .replace(YAHOO_UNSUBSCRIBE_REGEX, "\n")
+    .replace(YAHOO_UNSUBSCRIBE_DUPLICATE_REGEX, "\n")
+    .replace(YAHOO_UNSUBSCRIBE_LINE_DUPLICATE_REGEX, "\n")
+    .replace(YAHOO_GROUP_LINKS_REGEX, "\n");
+}
+
+function removeYahooGroupLinksLines(value) {
+  const lines = value.split(/\r?\n/);
+  const kept = [];
+  let skipping = false;
+  let skippedLines = 0;
+
+  for (const line of lines) {
+    const normalized = line.trim();
+    const isYahooLinksMarker =
+      /Liens Yahoo!\s*Groupes/i.test(normalized) ||
+      /Pour consulter votre groupe en ligne/i.test(normalized) ||
+      /Pour vous d(?:\u00e9|\u00c3\u00a9|\u00c3\u0192\u00c2\u00a9|\u00c3\u0192\u00c6\u2019\u00c3\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a9)sincrire de ce groupe/i.test(normalized) ||
+      /L'utilisation de Yahoo!\s*Groupes est soumise/i.test(normalized);
+
+    if (!skipping && isYahooLinksMarker) {
+      skipping = true;
+      skippedLines = 0;
+      continue;
+    }
+
+    if (skipping) {
+      skippedLines += 1;
+      if (
+        /fr\.docs\.yahoo\.com\/info\/utos\.html/i.test(normalized) ||
+        /L'utilisation de Yahoo!\s*Groupes est soumise/i.test(normalized) ||
+        /Conditions d'utilisation/i.test(normalized) ||
+        skippedLines >= 18
+      ) {
+        skipping = false;
+      }
+      continue;
+    }
+
+    kept.push(line);
+  }
+
+  return kept.join("\n");
+}
+
+function removeYahooMarkerLines(value) {
+  return value
+    .split(/\r?\n/)
+    .filter((line) => !YAHOO_MARKER_LINE_REGEX.test(line))
+    .join("\n");
+}
+
+function replaceDisplayNames(value) {
+  let result = value;
+  for (const [search, replacement] of DISPLAY_NAME_REPLACEMENTS) {
+    result = result.replaceAll(search, replacement);
+  }
+  return result;
+}
+
 function cleanAuthor(value) {
-  return removeEmailPlaceholders(anonymizeEmails(value))
+  return replaceDisplayNames(removeEmailPlaceholders(anonymizeEmails(value))
     .replace(/\s*<>\s*/g, "")
     .replace(/^"([^"]+)"$/g, "$1")
     .replace(/"([^"]+)"/g, "$1")
     .replace(/^"+$/g, "")
     .replace(/[ \t]{2,}/g, " ")
-    .trim();
+    .trim());
+}
+
+function authorNameFromEmail(email) {
+  const normalized = email.toLowerCase();
+  return AUTHOR_EMAIL_REPLACEMENTS.get(normalized) ?? normalized.split("@")[0] ?? "";
+}
+
+function fallbackAuthorFromHeader(value) {
+  const email = value.match(EMAIL_REGEX)?.[0];
+  return email ? authorNameFromEmail(email) : "";
 }
 
 function cleanMessageText(value) {
-  return removeEmailPlaceholders(anonymizeEmails(value)
-    .replace(YAHOO_UNSUBSCRIBE_DUPLICATE_REGEX, "\n")
+  const repairedValue = repairMojibakeAccents(value);
+  const cleaned = replaceDisplayNames(removeEmailPlaceholders(anonymizeEmails(removeYahooMarkerLines(removeYahooGroupLinksLines(removeYahooUnsubscribe(repairedValue))))
+    .replace(YAHOO_UNSUBSCRIBE_REGEX, "\n")
+    .replace(YAHOO_GROUP_LINKS_REGEX, "\n")
+    .replace(YAHOO_TRUE_SWITCH_PROMO_REGEX, "\n")
     .replace(YAHOO_FOOTER_REGEX, "\n")
     .replace(YAHOO_FOOTER_SHORT_REGEX, "\n")
     .replace(YAHOO_FOOTER_LINKED_REGEX, "\n")
     .replace(YAHOO_MAIL_PROMO_REGEX, "\n")
     .replace(/\n{4,}/g, "\n\n\n")
-    .trim())
-    .replace(YAHOO_UNSUBSCRIBE_LINE_DUPLICATE_REGEX, "\n")
+    .trim()));
+
+  return removeYahooMarkerLines(removeYahooGroupLinksLines(cleaned))
+    .replace(YAHOO_UNSUBSCRIBE_REGEX, "\n")
+    .replace(YAHOO_TRUE_SWITCH_PROMO_REGEX, "\n")
     .replace(/\n{4,}/g, "\n\n\n")
     .trim();
 }
@@ -266,6 +430,17 @@ function formatDate(date) {
     timeStyle: "short",
     timeZone: "Europe/Paris",
   }).format(date);
+}
+
+function normalizeConversationDate(date, key) {
+  const forcedYear = FORCED_CONVERSATION_YEARS.get(key);
+  if (!forcedYear || !Number.isFinite(date.getTime()) || date.getUTCFullYear() === forcedYear) {
+    return date;
+  }
+
+  const normalizedDate = new Date(date);
+  normalizedDate.setUTCFullYear(forcedYear);
+  return normalizedDate;
 }
 
 function parseBuildMode(argv) {
@@ -305,9 +480,11 @@ async function readMessage(file) {
   const buffer = await readFile(file);
   const { rawHeaders } = splitHeaderBody(buffer);
   const headers = parseHeaders(rawHeaders);
-  const subject = decodeWords(header(headers, "subject"));
-  const date = new Date(header(headers, "date"));
-  const from = cleanAuthor(decodeWords(header(headers, "from")).replace(/\s+/g, " ").trim()) || "Auteur inconnu";
+  const subject = repairMojibakeAccents(decodeWords(header(headers, "subject")));
+  const key = conversationKey(subject);
+  const date = normalizeConversationDate(messageDate(headers), key);
+  const fromHeader = repairMojibakeAccents(decodeWords(header(headers, "from"))).replace(/\s+/g, " ").trim();
+  const from = cleanAuthor(fromHeader) || fallbackAuthorFromHeader(fromHeader) || "Auteur inconnu";
   const rawText = extractTextPart(buffer).replace(/\r\n/g, "\n");
   const bodyEmails = findBodyEmails(rawText);
   const text = cleanMessageText(rawText);
@@ -320,7 +497,7 @@ async function readMessage(file) {
     from,
     text: text || "(Message vide ou pièce jointe non textuelle.)",
     bodyEmails,
-    key: conversationKey(subject),
+    key,
   };
 }
 
@@ -338,13 +515,29 @@ ${withEmails.map((message) => `- ${formatDate(message.date)} · ${message.subjec
 
 function renderNav(conversations, currentSlug = "") {
   return conversations.map((conversation) => `
-    <a class="${conversation.slug === currentSlug ? "active" : ""}" href="${currentSlug ? "" : "conversations/"}${conversation.slug}.html">
+    <a class="${(conversation.outputSlug ?? conversation.slug) === currentSlug ? "active" : ""}" href="${currentSlug ? "" : "conversations/"}${conversation.outputSlug ?? conversation.slug}.html">
       <span>${escapeHtml(conversation.title)}</span>
       <small>${conversation.messages.length} message${conversation.messages.length > 1 ? "s" : ""} · ${formatDate(conversation.firstDate)}</small>
     </a>`).join("");
 }
 
-function pageShell({ title, description, body, nav, relative = "." }) {
+function slugWithoutIndex(slug) {
+  return slug.replace(/^\d{4}-/, "");
+}
+
+async function existingConversationSlugs() {
+  try {
+    const entries = await readdir(OUT_CONVERSATIONS, { withFileTypes: true });
+    return new Set(entries
+      .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".html"))
+      .map((entry) => entry.name.slice(0, -".html".length)));
+  } catch (error) {
+    if (error.code === "ENOENT") return new Set();
+    throw error;
+  }
+}
+
+function pageShell({ title, description, body, nav, relative = ".", mainClass = "" }) {
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -358,12 +551,14 @@ function pageShell({ title, description, body, nav, relative = "." }) {
 </head>
 <body>
   <button class="menu-toggle" type="button" aria-controls="conversation-nav" aria-expanded="false">☰</button>
+  <header class="site-header">
+    <a class="site-title" href="${relative}/index.html">${TITLE}</a>
+  </header>
   <aside class="sidebar" id="conversation-nav">
-    <a class="brand" href="${relative}/index.html">${TITLE}</a>
     <nav>${nav}</nav>
   </aside>
   <div class="overlay" data-close-menu></div>
-  <main class="archive-main">
+  <main class="archive-main${mainClass ? ` ${mainClass}` : ""}">
 ${body}
   </main>
   <script src="${relative}/assets/archive.js"></script>
@@ -371,11 +566,14 @@ ${body}
 </html>`;
 }
 
-function renderMessage(message, index) {
+function renderMessage(message, index, conversationTitle) {
+  const messageTitle = message.subject === conversationTitle
+    ? ""
+    : `    <h2>${escapeHtml(message.subject)}</h2>\n`;
+
   return `<article class="message-panel" id="message-${index + 1}">
   <header>
-    <h2>${escapeHtml(message.subject)}</h2>
-    <dl>
+${messageTitle}    <dl>
       <div><dd>${escapeHtml(message.from)}</dd></div>
       <div><dd>${escapeHtml(formatDate(message.date))}</dd></div>
     </dl>
@@ -396,6 +594,7 @@ async function main() {
 
   const files = await listEmlFiles(SOURCE_DIR);
   const messages = (await Promise.all(files.map(readMessage)))
+    .filter((message) => message.date >= ARCHIVE_START_DATE)
     .sort((a, b) => (a.date - b.date) || a.subject.localeCompare(b.subject, "fr"));
 
   const byConversation = new Map();
@@ -422,9 +621,34 @@ async function main() {
     conversation.slug = `${String(index + 1).padStart(4, "0")}-${slugify(conversation.title)}`;
   });
 
-  const conversationsToBuild = isFullBuild ? conversations : conversations.slice(0, 1);
+  const existingSlugs = isFullBuild ? new Set() : await existingConversationSlugs();
+  const existingSlugsBySuffix = new Map([...existingSlugs].map((slug) => [slugWithoutIndex(slug), slug]));
+  const conversationsWithOutputSlugs = isFullBuild
+    ? conversations
+    : conversations.map((conversation, index) => ({
+      ...conversation,
+      outputSlug: index === 0
+        ? conversation.slug
+        : existingSlugsBySuffix.get(slugWithoutIndex(conversation.slug)) ?? conversation.slug,
+    }));
+  const conversationsToBuild = isFullBuild
+    ? conversationsWithOutputSlugs
+    : conversationsWithOutputSlugs.filter((conversation, index) =>
+      index === 0
+      || conversation.firstDate < ARCHIVE_2004_START_DATE
+      || FORCED_CONVERSATION_YEARS.has(conversation.messages[0]?.key ?? "")
+    );
+  const builtSlugs = new Set(conversationsToBuild.map((conversation) => conversation.outputSlug ?? conversation.slug));
+  const conversationsToList = isFullBuild
+    ? conversationsWithOutputSlugs
+    : conversationsWithOutputSlugs
+      .filter((conversation, index) =>
+        index === 0
+        || builtSlugs.has(conversation.outputSlug ?? conversation.slug)
+        || existingSlugs.has(conversation.outputSlug ?? conversation.slug));
   const generatedMessages = conversationsToBuild.reduce((total, conversation) => total + conversation.messages.length, 0);
-  const nav = renderNav(conversationsToBuild);
+  const listedMessages = conversationsToList.reduce((total, conversation) => total + conversation.messages.length, 0);
+  const nav = renderNav(conversationsToList);
   const indexBody = `    <header class="hero">
       <p>Archives consultables en HTML statique</p>
       <h1>${TITLE}</h1>
@@ -432,18 +656,18 @@ async function main() {
         <label for="conversation-search">Rechercher une conversation</label>
         <input id="conversation-search" type="search" placeholder="Sujet, date, nombre de messages">
       </form>
-      <p>${generatedMessages} messages regroupés en ${conversationsToBuild.length} conversations.</p>
+      <p>${listedMessages} messages regroupés en ${conversationsToList.length} conversations.</p>
     </header>
     <section class="conversation-list" data-conversation-list>
-${conversationsToBuild.map((conversation) => `      <article data-search="${escapeHtml(`${conversation.title} ${formatDate(conversation.firstDate)} ${conversation.messages.length}`.toLowerCase())}">
-        <h2><a href="conversations/${conversation.slug}.html">${escapeHtml(conversation.title)}</a></h2>
+${conversationsToList.map((conversation) => `      <article data-search="${escapeHtml(`${conversation.title} ${formatDate(conversation.firstDate)} ${conversation.messages.length}`.toLowerCase())}">
+        <h2><a href="conversations/${conversation.outputSlug ?? conversation.slug}.html">${escapeHtml(conversation.title)}</a></h2>
         <p>${formatDate(conversation.firstDate)} · ${conversation.messages.length} message${conversation.messages.length > 1 ? "s" : ""}</p>
       </article>`).join("\n")}
     </section>`;
 
   await writeFile(path.join(OUT_DIR, "index.html"), pageShell({
     title: TITLE,
-    description: "Archives HTML de la mailing-list Escrime Ancienne de 2002 à 2011.",
+    description: "Archives HTML de la mailing-list Escrime Ancienne de 2003 à 2011.",
     body: indexBody,
     nav,
     relative: ".",
@@ -460,13 +684,14 @@ ${conversationsToBuild.map((conversation) => `      <article data-search="${esca
         ${next ? `<a href="${next.slug}.html">Conversation suivante</a>` : "<span></span>"}
       </div>
     </header>
-${conversation.messages.map(renderMessage).join("\n")}`;
-    await writeFile(path.join(OUT_CONVERSATIONS, `${conversation.slug}.html`), pageShell({
+${conversation.messages.map((message, index) => renderMessage(message, index, conversation.title)).join("\n")}`;
+    await writeFile(path.join(OUT_CONVERSATIONS, `${conversation.outputSlug ?? conversation.slug}.html`), pageShell({
       title: `${conversation.title} · ${TITLE}`,
       description: `Conversation "${conversation.title}" de la mailing-list Escrime Ancienne.`,
       body,
-      nav: renderNav(conversationsToBuild, conversation.slug),
+      nav: renderNav(conversationsToList, conversation.outputSlug ?? conversation.slug),
       relative: "..",
+      mainClass: "conversation-main",
     }), "utf8");
   }
 
@@ -479,6 +704,8 @@ ${conversation.messages.map(renderMessage).join("\n")}`;
     conversations: conversations.length,
     generatedMessages,
     generatedConversations: conversationsToBuild.length,
+    listedMessages,
+    listedConversations: conversationsToList.length,
   }, null, 2)}\n`, "utf8");
 
   if (isFullBuild) {

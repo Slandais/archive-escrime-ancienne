@@ -18,6 +18,12 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") setMenu(false);
 });
 
+const activeSidebarLink = document.querySelector(".sidebar nav a.active");
+
+if (activeSidebarLink && window.matchMedia("(min-width: 70rem)").matches) {
+  activeSidebarLink.scrollIntoView({ block: "center" });
+}
+
 const search = document.querySelector("#conversation-search");
 const items = [...document.querySelectorAll("[data-conversation-list] article")];
 
@@ -27,3 +33,13 @@ search?.addEventListener("input", () => {
     item.hidden = query && !item.dataset.search.includes(query);
   }
 });
+
+const yahooUnsubscribe =
+  /\n?[>\t ]*Pour vous d(?:\u00e9|\u00c3\u00a9|\u00c3\u0192\u00c2\u00a9|\u00c3\u0192\u00c6\u2019\u00c3\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a9)sabonner de ce groupe, envoyez un email [^:\r\n]{0,80}:[ \t]*(?:\r?\n[>\t ]*)?/gi;
+
+for (const messageBody of document.querySelectorAll(".message-panel pre")) {
+  messageBody.textContent = messageBody.textContent
+    .replace(yahooUnsubscribe, "\n")
+    .replace(/\n{4,}/g, "\n\n\n")
+    .trim();
+}

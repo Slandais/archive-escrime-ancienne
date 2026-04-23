@@ -1,4 +1,9 @@
 body {
+  --content-gutter: 2rem;
+  --content-gutter-right: 1rem;
+  --sidebar-width: min(22rem, 86vw);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-height: 100vh;
   max-width: none;
   margin: 0;
@@ -9,18 +14,40 @@ body {
   position: fixed;
   top: .75rem;
   left: .75rem;
-  z-index: 40;
+  z-index: 50;
   width: 2.75rem;
   height: 2.75rem;
   padding: 0;
   border-radius: 6px;
 }
 
-.sidebar {
+.site-header {
+  box-sizing: border-box;
   position: fixed;
-  inset: 0 auto 0 0;
+  inset: 0 0 auto;
+  z-index: 40;
+  min-height: 4.25rem;
+  padding: .85rem var(--content-gutter) .85rem 4.25rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-title {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.sidebar {
+  box-sizing: border-box;
+  position: fixed;
+  inset: 4.25rem auto 0 0;
   z-index: 30;
-  width: min(22rem, 86vw);
+  width: var(--sidebar-width);
   overflow-y: auto;
   padding: 1rem;
   background: var(--bg);
@@ -33,13 +60,6 @@ body {
   transform: translateX(0);
 }
 
-.brand {
-  display: block;
-  margin: .25rem 0 1rem;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
 .sidebar nav a {
   display: block;
   margin: 0 0 .35rem;
@@ -50,10 +70,19 @@ body {
   text-decoration: none;
 }
 
-.sidebar nav a:hover,
-.sidebar nav a.active {
+.sidebar nav a:hover {
   border-color: var(--accent);
   background: var(--accent-bg);
+}
+
+.sidebar nav a.active {
+  border-color: #0b63ce;
+  background: #0b63ce;
+  color: #fff;
+}
+
+.sidebar nav a.active small {
+  color: #eaf2ff;
 }
 
 .sidebar nav span,
@@ -80,9 +109,16 @@ body {
 }
 
 .archive-main {
+  box-sizing: border-box;
+  grid-column: 1 / -1;
   max-width: none;
-  margin: 0;
+  margin: 0 var(--content-gutter-right) 0 var(--content-gutter);
   padding-top: 4.75rem;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.conversation-main {
   padding-right: 0;
   padding-left: 0;
 }
@@ -113,6 +149,8 @@ body {
 .conversation-list article,
 .message-panel {
   border: 1px solid var(--border);
+  border-right: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
   border-radius: 6px;
   background: var(--accent-bg);
 }
@@ -131,6 +169,24 @@ body {
 .message-panel {
   margin: 1.25rem 0;
   padding: 1rem 0;
+}
+
+.conversation-main .conversation-header,
+.conversation-main .message-panel,
+.conversation-main .message-panel header,
+.conversation-main .message-panel pre {
+  margin-right: 0;
+  margin-left: 0;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.conversation-main .message-panel {
+  margin-top: 0;
+  margin-bottom: 0;
+  border-right: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+  border-radius: 0;
 }
 
 .message-panel h2 {
@@ -180,9 +236,13 @@ body {
     transform: none;
   }
 
+  .site-header {
+    padding-left: calc(22rem + var(--content-gutter));
+  }
+
   .archive-main {
-    margin-left: 24rem;
-    padding-top: 2rem;
-    width: calc(100% - 24rem);
+    margin-left: calc(22rem + var(--content-gutter));
+    padding-top: 6.25rem;
+    width: auto;
   }
 }
