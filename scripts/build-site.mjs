@@ -124,13 +124,125 @@ const CONVERSATION_KEYS_SPLIT_BY_GAP = new Set([
   "talhoffer",
   "merci",
 ]);
+const CONVERSATION_TITLE_MERGE_RULES = [
+  {
+    key: "stagesdescrime",
+    from: new Date("2004-01-01T00:00:00+01:00"),
+    to: new Date("2004-02-01T00:00:00+01:00"),
+  },
+  {
+    key: "bouclierceltes",
+    from: new Date("2004-02-18T00:00:00+01:00"),
+    to: new Date("2004-02-21T00:00:00+01:00"),
+  },
+  {
+    key: "stagedinitiationaui33",
+    from: new Date("2004-02-29T00:00:00+01:00"),
+    to: new Date("2004-03-03T00:00:00+01:00"),
+  },
+  {
+    key: "tenueepeelonguecompareealatenudusabrejaponais",
+    from: new Date("2004-04-12T00:00:00+02:00"),
+    to: new Date("2004-04-15T00:00:00+02:00"),
+  },
+  {
+    key: "lateralisationenepeeadeuxmains",
+    from: new Date("2004-05-01T00:00:00+02:00"),
+    to: new Date("2004-05-04T00:00:00+02:00"),
+  },
+  {
+    key: "articlesurlescrimeaufauchon",
+    from: new Date("2004-05-07T00:00:00+02:00"),
+    to: new Date("2004-06-02T00:00:00+02:00"),
+  },
+  {
+    key: "combatadeuxepees",
+    from: new Date("2004-06-08T00:00:00+02:00"),
+    to: new Date("2004-06-11T00:00:00+02:00"),
+  },
+  {
+    key: "dijon",
+    from: new Date("2004-04-13T00:00:00+02:00"),
+    to: new Date("2004-04-17T00:00:00+02:00"),
+  },
+  {
+    key: "escrimemedievaleouartistiqueinfo",
+    from: new Date("2004-09-04T00:00:00+02:00"),
+    to: new Date("2004-09-16T00:00:00+02:00"),
+  },
+  {
+    key: "rechercheescrimeartistiquesurlyon",
+    from: new Date("2004-08-28T00:00:00+02:00"),
+    to: new Date("2004-09-14T00:00:00+02:00"),
+  },
+  {
+    keys: ["unknown", "2epiecedulignitzer"],
+    from: new Date("2004-06-30T00:00:00+02:00"),
+    to: new Date("2004-07-01T00:00:00+02:00"),
+  },
+  {
+    key: "commandecollective",
+    from: new Date("2005-02-19T00:00:00+01:00"),
+    to: new Date("2005-02-25T00:00:00+01:00"),
+  },
+  {
+    key: "escrimecroisee",
+    from: new Date("2005-05-09T00:00:00+02:00"),
+    to: new Date("2005-05-12T00:00:00+02:00"),
+  },
+  {
+    key: "epecape",
+    from: new Date("2005-06-15T00:00:00+02:00"),
+    to: new Date("2005-06-22T00:00:00+02:00"),
+  },
+  {
+    key: "messerwallersteinplate63",
+    from: new Date("2004-08-31T00:00:00+02:00"),
+    to: new Date("2004-09-07T00:00:00+02:00"),
+  },
+  {
+    key: "lejeudelahache",
+    from: new Date("2007-02-10T00:00:00+01:00"),
+    to: new Date("2007-02-27T00:00:00+01:00"),
+  },
+  {
+    key: "bfm",
+    from: new Date("2006-09-12T00:00:00+02:00"),
+    to: new Date("2006-09-15T00:00:00+02:00"),
+  },
+  {
+    key: "colloques",
+    from: new Date("2006-03-27T00:00:00+02:00"),
+    to: new Date("2006-03-30T00:00:00+02:00"),
+  },
+  {
+    key: "furussiyya",
+    from: new Date("2007-06-27T00:00:00+02:00"),
+    to: new Date("2007-06-30T00:00:00+02:00"),
+  },
+  {
+    key: "deladisparitiondeladague",
+    from: new Date("2004-10-29T00:00:00+01:00"),
+    to: new Date("2004-10-30T00:00:00+01:00"),
+  },
+  {
+    key: "stageete2006",
+    from: new Date("2006-06-16T00:00:00+02:00"),
+    to: new Date("2006-06-23T00:00:00+02:00"),
+  },
+  {
+    key: "retoursurflammes",
+    from: new Date("2004-08-31T00:00:00+02:00"),
+    to: new Date("2004-09-01T00:00:00+02:00"),
+  },
+];
 const CANONICAL_SUBJECT_RULES = [
   {
     title: "Veilleurs Moeux de la Confrérie Facétieuse",
     pattern: /^veilleursmoeuxdelaconfreriefacetieuse$/,
   },
   {
-    title: "Cuir, pas de mauvais esprit- SVP! (était : Alléluia !)",
+    title: "Cuir, pas de mauvais esprit- SVP!",
     pattern: /^cuirpasdemauvaisespritsvpetaitalleluia$/,
   },
   {
@@ -1037,8 +1149,18 @@ function mergeConversationItems(conversations) {
 
   for (const conversation of sorted) {
     const signature = titleWithoutSpaces(conversation.title);
+    const normalizedTitle = subjectBase(conversation.title).replace(/\s+/g, "");
+    const titleMergeRule = CONVERSATION_TITLE_MERGE_RULES.find((rule) =>
+      normalizedTitle === rule.key
+      && conversation.firstDate >= rule.from
+      && conversation.firstDate < rule.to
+    );
     const target = merged.find((item) =>
-      item.spaceMergeSignature === signature && sameOrNeighboringDay(item.firstDate, conversation.firstDate)
+      item.spaceMergeSignature === signature
+      && (
+        sameOrNeighboringDay(item.firstDate, conversation.firstDate)
+        || (titleMergeRule && item.title === conversation.title)
+      )
     );
 
     if (!target) {
@@ -1072,6 +1194,42 @@ function mergeConversationItems(conversations) {
       spaceMergeTitles,
     })),
     report,
+  };
+}
+
+function mergeConversationByRule(conversations, rule) {
+  const matched = conversations
+    .filter((conversation) => {
+      const normalizedTitle = subjectBase(conversation.title).replace(/\s+/g, "");
+      const allowedKeys = rule.keys ?? [rule.key];
+      return allowedKeys.includes(normalizedTitle)
+        && conversation.firstDate >= rule.from
+        && conversation.firstDate < rule.to;
+    })
+    .sort((a, b) => (a.firstDate - b.firstDate) || a.title.localeCompare(b.title, "fr"));
+
+  if (matched.length <= 1) return { conversations, merged: null };
+
+  const [target, ...others] = matched;
+  for (const conversation of others) {
+    target.messages.push(...conversation.messages);
+  }
+  target.messages.sort((a, b) => (a.date - b.date) || a.file.localeCompare(b.file));
+  target.firstDate = target.messages[0].date;
+  target.lastDate = target.messages.at(-1).date;
+  target.autoSpaceMerged = true;
+  target.spaceMergeTitles = [...new Set([...(target.spaceMergeTitles ?? [target.title]), ...others.map((conversation) => conversation.title)])];
+
+  return {
+    conversations: conversations.filter((conversation) => !others.includes(conversation)).map((conversation) => (
+      conversation === target ? target : conversation
+    )),
+    merged: {
+      title: target.title,
+      mergedTitles: others.map((conversation) => conversation.title),
+      messages: target.messages.length,
+      firstDate: target.firstDate,
+    },
   };
 }
 
@@ -1613,6 +1771,13 @@ async function main() {
   const mergedConversationItems = mergeConversationItems(conversations);
   conversations = mergedConversationItems.conversations;
   const autoSpaceMergeReport = mergedConversationItems.report;
+
+  const forcedMergeReport = [];
+  for (const rule of CONVERSATION_TITLE_MERGE_RULES) {
+    const result = mergeConversationByRule(conversations, rule);
+    conversations = result.conversations;
+    if (result.merged) forcedMergeReport.push(result.merged);
+  }
 
   assignConversationSlugs(conversations);
 
