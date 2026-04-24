@@ -623,6 +623,26 @@ function headerValues(headers, name) {
   return headers.get(name.toLowerCase()) ?? [];
 }
 
+function extractMessageIds(value) {
+  return String(value)
+    .replace(/\r?\n/g, " ")
+    .match(/<[^<>]+>/g)?.map((id) => id.toLowerCase()) ?? [];
+}
+
+function messageIdFromHeader(value) {
+  return extractMessageIds(value)[0] ?? "";
+}
+
+function subjectBase(subject) {
+  return cleanSubject(subject)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function parseDateHeader(value) {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date : null;
@@ -780,12 +800,7 @@ function cleanSubject(subject) {
 }
 
 function conversationKey(subject, date = null) {
-  const key = cleanSubject(subject)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim() || "sans sujet";
+  const key = subjectBase(subject) || "sans sujet";
 
   if (
     date
@@ -796,6 +811,105 @@ function conversationKey(subject, date = null) {
   }
 
   return key;
+}
+
+function gatherReferences(headers) {
+  const references = [];
+  for (const headerValue of headerValues(headers, "references")) {
+    references.push(...extractMessageIds(headerValue));
+  }
+  return references;
+}
+
+function buildThreads(messages) {
+  const nodes = new Map();
+
+  function getNode(messageId) {
+    if (!nodes.has(messageId)) {
+      nodes.set(messageId, {
+        messageId,
+        message: null,
+        parent: null,
+        children: [],
+      });
+    }
+    return nodes.get(messageId);
+  }
+
+  for (const message of messages) {
+    if (!message.messageId) continue;
+    getNode(message.messageId).message = message;
+  }
+
+  for (const message of messages) {
+    if (!message.messageId) continue;
+    const node = getNode(message.messageId);
+    const references = message.references ?? [];
+    let parentId = "";
+
+    for (const reference of references) {
+      if (!reference || reference === message.messageId) continue;
+      parentId = reference;
+      getNode(reference);
+    }
+
+    const replyTo = message.inReplyTo?.find((id) => id && id !== message.messageId) ?? "";
+    if (replyTo) {
+      parentId = replyTo;
+      getNode(replyTo);
+    }
+
+    if (parentId && parentId !== message.messageId) {
+      const parent = getNode(parentId);
+      if (node.parent && node.parent !== parent) {
+        node.parent.children = node.parent.children.filter((child) => child !== node);
+      }
+      node.parent = parent;
+      if (!parent.children.includes(node)) {
+        parent.children.push(node);
+      }
+    }
+  }
+
+  const roots = [];
+  for (const node of nodes.values()) {
+    if (!node.message) continue;
+    if (!node.parent || !node.parent.message) {
+      roots.push(node);
+    }
+  }
+
+  const visited = new Set();
+  const conversations = [];
+
+  function collect(node, bucket) {
+    if (visited.has(node.messageId) || !node.message) return;
+    visited.add(node.messageId);
+    bucket.push(node.message);
+    const children = [...node.children]
+      .sort((a, b) => (a.message?.date - b.message?.date) || a.messageId.localeCompare(b.messageId));
+    for (const child of children) {
+      collect(child, bucket);
+    }
+  }
+
+  const orderedRoots = roots.sort((a, b) => (a.message.date - b.message.date) || a.messageId.localeCompare(b.messageId));
+  for (const root of orderedRoots) {
+    const items = [];
+    collect(root, items);
+    if (items.length > 0) {
+      items.sort((a, b) => (a.date - b.date) || a.file.localeCompare(b.file));
+      conversations.push(items);
+    }
+  }
+
+  const orphans = messages.filter((message) => !message.messageId || !visited.has(message.messageId));
+  if (orphans.length > 0) {
+    conversations.push(...orphans.map((message) => [message]));
+  }
+
+  return conversations
+    .map((items) => items.sort((a, b) => (a.date - b.date) || a.file.localeCompare(b.file)));
 }
 
 function slugify(text) {
@@ -1324,6 +1438,9 @@ async function readMessage(file) {
   const key = conversationKey(subject, date);
   const fromHeader = repairMojibakeAccents(decodeWords(header(headers, "from"))).replace(/\s+/g, " ").trim();
   const from = cleanAuthor(fromHeader) || fallbackAuthorFromHeader(fromHeader) || "Auteur inconnu";
+  const messageId = messageIdFromHeader(header(headers, "message-id"));
+  const inReplyTo = extractMessageIds(header(headers, "in-reply-to"));
+  const references = gatherReferences(headers);
   const rawText = extractTextPart(buffer).replace(/\r\n/g, "\n");
   const bodyEmails = findBodyEmails(rawText);
   const text = cleanMessageText(rawText);
@@ -1337,6 +1454,9 @@ async function readMessage(file) {
     text: text || "(Message vide ou pièce jointe non textuelle.)",
     bodyEmails,
     key,
+    messageId,
+    inReplyTo,
+    references,
   };
 }
 
@@ -1475,25 +1595,20 @@ async function main() {
     .filter((message) => message.date >= ARCHIVE_START_DATE)
     .sort((a, b) => (a.date - b.date) || a.subject.localeCompare(b.subject, "fr"));
 
-  const byConversation = new Map();
-  for (const message of messages) {
-    if (!byConversation.has(message.key)) byConversation.set(message.key, []);
-    byConversation.get(message.key).push(message);
-  }
-
-  let conversations = [...byConversation.values()]
+  let conversations = buildThreads(messages)
     .flatMap((items) => splitConversationMessages(items))
     .map((items, index) => {
-    const title = items[0].subject;
-    return {
-      index,
-      title,
-      slug: `${String(index + 1).padStart(4, "0")}-${slugify(title)}`,
-      firstDate: items[0].date,
-      lastDate: items.at(-1).date,
-      messages: items,
-    };
-  }).sort((a, b) => (a.firstDate - b.firstDate) || a.title.localeCompare(b.title, "fr"));
+      const title = items[0].subject;
+      return {
+        index,
+        title,
+        slug: `${String(index + 1).padStart(4, "0")}-${slugify(title)}`,
+        firstDate: items[0].date,
+        lastDate: items.at(-1).date,
+        messages: items,
+      };
+    })
+    .sort((a, b) => (a.firstDate - b.firstDate) || a.title.localeCompare(b.title, "fr"));
 
   const mergedConversationItems = mergeConversationItems(conversations);
   conversations = mergedConversationItems.conversations;
