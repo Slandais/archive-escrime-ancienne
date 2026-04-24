@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { TextDecoder } from "node:util";
 
@@ -8,7 +8,7 @@ const SOURCE_DIR = path.join(ROOT, "ML escrime_medievale");
 const OUT_DIR = path.join(ROOT, "dist");
 const OUT_CONVERSATIONS = path.join(OUT_DIR, "conversations");
 const ABOUT_SOURCE = path.join(ROOT, "about.html");
-const TITLE = "Archive Mailing-List Escrime Ancienne - 2003 à 2011";
+const TITLE = "Archive Mailing-List escrime_medievale - 2003 à 2011";
 const AUTHOR = "Simon LANDAIS pour la FFAMHE";
 const BUILD_MODES = new Set(["partial", "full"]);
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -787,7 +787,7 @@ function titleWithoutSpaces(title) {
   return title.toLowerCase().replace(/\s+/g, "");
 }
 
-function parisDayNumber(date) {
+function parisDateParts(date) {
   const parts = new Intl.DateTimeFormat("fr-FR", {
     timeZone: "Europe/Paris",
     year: "numeric",
@@ -795,7 +795,96 @@ function parisDayNumber(date) {
     day: "2-digit",
   }).formatToParts(date);
   const value = (type) => Number(parts.find((part) => part.type === type)?.value ?? 0);
-  return Math.floor(Date.UTC(value("year"), value("month") - 1, value("day")) / ONE_DAY_MS);
+  return {
+    year: value("year"),
+    month: value("month"),
+    day: value("day"),
+  };
+}
+
+function parisDayNumber(date) {
+  const { year, month, day } = parisDateParts(date);
+  return Math.floor(Date.UTC(year, month - 1, day) / ONE_DAY_MS);
+}
+
+function slugDate(date) {
+  const { year, month, day } = parisDateParts(date);
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function legacyConversationSlug(title, index) {
+  return `${String(index + 1).padStart(4, "0")}-${slugify(title)}`;
+}
+
+function conversationBaseSlug(conversation) {
+  return `${slugDate(conversation.firstDate)}-${slugify(conversation.title)}`;
+}
+
+function assignConversationSlugs(conversations) {
+  const seen = new Map();
+
+  conversations.forEach((conversation, index) => {
+    const baseSlug = conversationBaseSlug(conversation);
+    const duplicateCount = (seen.get(baseSlug) ?? 0) + 1;
+    seen.set(baseSlug, duplicateCount);
+
+    conversation.index = index;
+    conversation.legacySlug = legacyConversationSlug(conversation.title, index);
+    conversation.slug = duplicateCount === 1
+      ? baseSlug
+      : `${baseSlug}-${duplicateCount}`;
+  });
+}
+
+async function rewriteConversationLinks(renamePairs) {
+  if (renamePairs.length === 0) return;
+
+  const conversationSlugs = await existingConversationSlugs();
+  const htmlFiles = [
+    path.join(OUT_DIR, "index.html"),
+    path.join(OUT_DIR, "about.html"),
+    ...[...conversationSlugs].map((slug) => path.join(OUT_CONVERSATIONS, `${slug}.html`)),
+  ];
+
+  await Promise.all(htmlFiles.map(async (filePath) => {
+    try {
+      const content = await readFile(filePath, "utf8");
+      let updated = content;
+
+      for (const { from, to } of renamePairs) {
+        updated = updated.replaceAll(`conversations/${from}.html`, `conversations/${to}.html`);
+        updated = updated.replaceAll(`"${from}.html"`, `"${to}.html"`);
+      }
+
+      if (updated !== content) {
+        await writeFile(filePath, updated, "utf8");
+      }
+    } catch (error) {
+      if (error.code === "ENOENT") return;
+      throw error;
+    }
+  }));
+}
+
+async function migrateConversationFilenames(conversations) {
+  const existingSlugs = await existingConversationSlugs();
+  const renamePairs = [];
+
+  for (const conversation of conversations) {
+    if (conversation.legacySlug === conversation.slug) continue;
+    if (!existingSlugs.has(conversation.legacySlug) || existingSlugs.has(conversation.slug)) continue;
+
+    await rename(
+      path.join(OUT_CONVERSATIONS, `${conversation.legacySlug}.html`),
+      path.join(OUT_CONVERSATIONS, `${conversation.slug}.html`),
+    );
+    existingSlugs.delete(conversation.legacySlug);
+    existingSlugs.add(conversation.slug);
+    renamePairs.push({ from: conversation.legacySlug, to: conversation.slug });
+  }
+
+  await rewriteConversationLinks(renamePairs);
+  return existingSlugs;
 }
 
 function sameOrNeighboringDay(a, b) {
@@ -1219,15 +1308,11 @@ function renderNav(conversations, { currentSlug = "", currentPage = "", relative
     </a>
     <div class="nav-section-title">Conversations</div>`;
   const conversationLinks = conversations.map((conversation) => `
-    <a class="${(conversation.outputSlug ?? conversation.slug) === currentSlug ? "active" : ""}" href="${conversationPrefix}${conversation.outputSlug ?? conversation.slug}.html">
+    <a class="${conversation.slug === currentSlug ? "active" : ""}" href="${conversationPrefix}${conversation.slug}.html">
       <span>${escapeHtml(conversation.title)}</span>
       <small>${conversation.messages.length} message${conversation.messages.length > 1 ? "s" : ""} · ${formatDate(conversation.firstDate)}</small>
     </a>`).join("");
   return `${staticLinks}${conversationLinks}`;
-}
-
-function slugWithoutIndex(slug) {
-  return slug.replace(/^\d{4}-/, "");
 }
 
 async function existingConversationSlugs() {
@@ -1326,48 +1411,26 @@ async function main() {
   conversations = mergedConversationItems.conversations;
   const autoSpaceMergeReport = mergedConversationItems.report;
 
-  conversations.forEach((conversation, index) => {
-    conversation.index = index;
-    conversation.slug = `${String(index + 1).padStart(4, "0")}-${slugify(conversation.title)}`;
-  });
+  assignConversationSlugs(conversations);
 
-  const existingSlugs = isFullBuild ? new Set() : await existingConversationSlugs();
-  const existingSlugsBySuffix = new Map([...existingSlugs].map((slug) => [slugWithoutIndex(slug), slug]));
-  const conversationsWithOutputSlugs = isFullBuild
-    ? conversations
-    : (() => {
-      const usedOutputSlugs = new Set();
-      return conversations.map((conversation, index) => {
-        const preferredOutputSlug = index === 0
-          ? conversation.slug
-          : existingSlugsBySuffix.get(slugWithoutIndex(conversation.slug)) ?? conversation.slug;
-        const outputSlug = usedOutputSlugs.has(preferredOutputSlug)
-          ? conversation.slug
-          : preferredOutputSlug;
-        usedOutputSlugs.add(outputSlug);
-        return {
-          ...conversation,
-          outputSlug,
-        };
-      });
-    })();
+  const existingSlugs = isFullBuild ? new Set() : await migrateConversationFilenames(conversations);
   const conversationsToBuild = isFullBuild
-    ? conversationsWithOutputSlugs
-    : conversationsWithOutputSlugs.filter((conversation, index) =>
+    ? conversations
+    : conversations.filter((conversation, index) =>
       index === 0
       || conversation.firstDate < ARCHIVE_2004_START_DATE
       || conversation.autoSpaceMerged
       || PARTIAL_BUILD_CONVERSATION_KEYS.has(conversation.messages[0]?.key ?? "")
       || FORCED_CONVERSATION_YEARS.has(conversation.messages[0]?.key ?? "")
     );
-  const builtSlugs = new Set(conversationsToBuild.map((conversation) => conversation.outputSlug ?? conversation.slug));
+  const builtSlugs = new Set(conversationsToBuild.map((conversation) => conversation.slug));
   const conversationsToList = isFullBuild
-    ? conversationsWithOutputSlugs
-    : conversationsWithOutputSlugs
+    ? conversations
+    : conversations
       .filter((conversation, index) =>
         index === 0
-        || builtSlugs.has(conversation.outputSlug ?? conversation.slug)
-        || existingSlugs.has(conversation.outputSlug ?? conversation.slug));
+        || builtSlugs.has(conversation.slug)
+        || existingSlugs.has(conversation.slug));
   const generatedMessages = conversationsToBuild.reduce((total, conversation) => total + conversation.messages.length, 0);
   const listedMessages = conversationsToList.reduce((total, conversation) => total + conversation.messages.length, 0);
   const nav = renderNav(conversationsToList, { currentPage: "home", relative: "." });
@@ -1382,14 +1445,14 @@ async function main() {
     </header>
     <section class="conversation-list" data-conversation-list>
 ${conversationsToList.map((conversation) => `      <article data-search="${escapeHtml(`${conversation.title} ${formatDate(conversation.firstDate)} ${conversation.messages.length}`.toLowerCase())}">
-        <h2><a href="conversations/${conversation.outputSlug ?? conversation.slug}.html">${escapeHtml(conversation.title)}</a></h2>
+        <h2><a href="conversations/${conversation.slug}.html">${escapeHtml(conversation.title)}</a></h2>
         <p>${formatDate(conversation.firstDate)} · ${conversation.messages.length} message${conversation.messages.length > 1 ? "s" : ""}</p>
       </article>`).join("\n")}
     </section>`;
 
   await writeFile(path.join(OUT_DIR, "index.html"), pageShell({
     title: TITLE,
-    description: "Archives HTML de la mailing-list Escrime Ancienne de 2003 à 2011.",
+    description: "Archives HTML de la mailing-list escrime_medievale de 2003 à 2011.",
     body: indexBody,
     nav,
     relative: ".",
@@ -1397,7 +1460,7 @@ ${conversationsToList.map((conversation) => `      <article data-search="${escap
 
   await writeFile(path.join(OUT_DIR, "about.html"), pageShell({
     title: `A propos · ${TITLE}`,
-    description: "Présentation de l'archive Mailing-List Escrime Ancienne.",
+    description: "Présentation de l'archive Mailing-List escrime_medievale.",
     body: await readAboutBody(),
     nav: renderNav(conversationsToList, { currentPage: "about", relative: "." }),
     relative: ".",
@@ -1415,12 +1478,12 @@ ${conversationsToList.map((conversation) => `      <article data-search="${escap
       </div>
     </header>
 ${conversation.messages.map((message, index) => renderMessage(message, index, conversation.title)).join("\n")}`;
-    await writeFile(path.join(OUT_CONVERSATIONS, `${conversation.outputSlug ?? conversation.slug}.html`), pageShell({
+    await writeFile(path.join(OUT_CONVERSATIONS, `${conversation.slug}.html`), pageShell({
       title: `${conversation.title} · ${TITLE}`,
-      description: `Conversation "${conversation.title}" de la mailing-list Escrime Ancienne.`,
+      description: `Conversation "${conversation.title}" de la mailing-list escrime_medievale.`,
       body,
       nav: renderNav(conversationsToList, {
-        currentSlug: conversation.outputSlug ?? conversation.slug,
+        currentSlug: conversation.slug,
         relative: "..",
       }),
       relative: "..",

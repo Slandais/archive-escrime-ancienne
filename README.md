@@ -1,4 +1,4 @@
-# Archive Mailing-List Escrime Ancienne - 2003 à 2011
+# Archive Mailing-List escrime_medievale - 2003 à 2011
 
 Ce dépôt contient une version HTML statique des archives de la mailing-list
 `escrime_medievale`.
@@ -8,7 +8,7 @@ Ce dépôt contient une version HTML statique des archives de la mailing-list
 - `ML escrime_medievale/` : données sources extraites depuis l'archive zip.
 - `dist/` : sortie HTML statique deployable.
 - `dist/index.html` : page d'accueil avec recherche dans les conversations.
-- `dist/conversations/` : une page HTML par conversation.
+- `dist/conversations/` : une page HTML par conversation, nommée `YYYY-MM-DD-slug.html`.
 - `assets/` : CSS et JavaScript de navigation copies dans `dist/assets/`.
 - `scripts/build-site.mjs` : générateur du site statique.
 
