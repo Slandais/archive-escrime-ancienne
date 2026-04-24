@@ -7,6 +7,7 @@ const ROOT = process.cwd();
 const SOURCE_DIR = path.join(ROOT, "ML escrime_medievale");
 const OUT_DIR = path.join(ROOT, "dist");
 const OUT_CONVERSATIONS = path.join(OUT_DIR, "conversations");
+const OUT_CATEGORIES = path.join(OUT_DIR, "categories");
 const ABOUT_SOURCE = path.join(ROOT, "about.html");
 const TITLE = "Archive Mailing-List escrime_medievale - 2003 à 2011";
 const AUTHOR = "Simon LANDAIS pour la FFAMHE";
@@ -509,9 +510,9 @@ const MOJIBAKE_REPLACEMENTS = new Map([
 ]);
 const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 const EMAIL_PLACEHOLDER_REGEX = /<?\s*\[adresse email anonymis(?:ée|\u00c3\u00a9e|\u00c3\u0192\u00c2\u00a9e)\]\s*>?/gi;
-const YAHOO_FOOTER_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation et de la Charte sur la vie priv[ée]e[\s\S]{0,260}?http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html et[\s\S]{0,160}?http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html[>\s]*/gi;
-const YAHOO_FOOTER_SHORT_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation et de la Charte sur la vie priv[ée]e\.[>\s]*/gi;
-const YAHOO_FOOTER_LINKED_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,620}?Charte sur la vie[\s\S]{0,180}?priv[ée]e\.?[>\s]*/gi;
+const YAHOO_FOOTER_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation[\s\S]{0,260}?http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html(?:[\s\S]{0,220}?http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html)?[>\s]*/gi;
+const YAHOO_FOOTER_SHORT_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation(?:[\s\S]{0,180}?Charte sur la vie priv[ée]e)?\.?[>\s]*/gi;
+const YAHOO_FOOTER_LINKED_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,620}?(?:Charte sur la vie[\s\S]{0,180}?priv[ée]e|conditions d'utilisation)\.?(?:[>\s]|$)*/gi;
 
 const YAHOO_UNSUBSCRIBE_REGEX = /\n?[>\t ]*Pour vous d(?:\u00e9|\u00c3\u00a9|\u00c3\u0192\u00c2\u00a9|\u00c3\u0192\u00c6\u2019\u00c3\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a9)sabonner de ce groupe, envoyez un email [^:\r\n]{0,80}:[ \t]*(?:\r?\n[>\t ]*(?:(?:\[[^\]\r\n]*adresse email[^\]\r\n]*\])|(?:[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}))?[ \t]*)?/gi;
 const YAHOO_UNSUBSCRIBE_DUPLICATE_REGEX = /\n?[>\t ]*Pour vous d(?:\u00e9|\u00c3\u00a9)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n[>\t ]*(?:\[[^\]\r\n]*adresse email[^\]\r\n]*\])?[ \t]*)?\r?\n[>\t ]*Pour vous d(?:\u00e9|\u00c3\u00a9)sabonner de ce groupe, envoyez un email .+?:[ \t]*(?:\r?\n[>\t ]*(?:\[[^\]\r\n]*adresse email[^\]\r\n]*\])?[ \t]*)?/gi;
@@ -525,6 +526,30 @@ const YAHOO_HOMEPAGE_PROMO_REGEX = /\n?[>\t -]*-{20,}[>\t ]*(?:\r?\n[>\t ]*)?Fai
 
 const YAHOO_AUDIO_PROMO_REGEX = /\n?[>\t -]*(?:-{10,}[ \t]*(?:\r?\n[>\t ]*)?)?Appel audio GRATUIT partout dans le monde avec le nouveau Yahoo!\s*Messenger[>\t ]*(?:\r?\n[>\t ]*)?T(?:é|\u00c3\u00a9)l(?:é|\u00c3\u00a9)chargez le ici ![>\t ]*/gi;
 
+const CATEGORY_DEFINITIONS = [
+  {
+    slug: "conversations-fleuves",
+    title: "Conversations fleuves",
+    description: "Conversations les plus longues de l'archive, a partir de 10 messages.",
+    intro: "Cette categorie rassemble les discussions les plus fournies de la liste, utiles pour retrouver les grands debats et fils tres suivis.",
+    matches: (conversation) => conversation.messages.length >= 10,
+  },
+  {
+    slug: "stage",
+    title: "Stage",
+    description: "Conversations qui traitent d'un stage, d'une annonce ou d'un retour autour d'un stage.",
+    intro: "Cette categorie regroupe les annonces, questions et comptes rendus autour des stages mentionnes dans la mailing-list.",
+    matches: (conversation) => /\bstage\b|\bstages\b/.test(conversation.searchText),
+  },
+  {
+    slug: "federalisme",
+    title: "Fédéralisme",
+    description: "Conversations autour des federations, annuaires, portails et initiatives collectives.",
+    intro: "Cette categorie met en avant les conversations autour des structures collectives, des annuaires de groupes et des initiatives de coordination.",
+    matches: (conversation) => /\bfederation\b|\bfederations\b|\bannuaire\b|\bportail\b|\brecensement\b|\bpratiquants\b|\bquestionnaire\b|\bcommission\b/.test(conversation.searchText),
+  },
+];
+
 const YAHOO_MAIL_PROMO_REGEX = new RegExp(
   String.raw`\n?[>\s]*(?:-{10,}[>\s]*(?:\r?\n[>\s]*)?)?Do You ` +
     String.raw`Yahoo!\? -- Une adresse @yahoo\.fr gratuite et en fran(?:ç|\u00c3\u00a7)ais ![>\s]*(?:\r?\n[>\s]*(?:<[^>\r\n]+>)?)?Testez le nouveau ` +
@@ -532,7 +557,7 @@ const YAHOO_MAIL_PROMO_REGEX = new RegExp(
   "gi",
 );
 
-const YAHOO_MARKER_LINE_REGEX = /(?:http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html|http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html|Yahoo!\s*Mail|escrime_medievale-unsubscribe@e|^\s*(?:&gt;|>|\s)*,\s*disponibles\s*$)/i;
+const YAHOO_MARKER_LINE_REGEX = /(?:http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html|http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html|Yahoo!\s*Mail|escrime_medievale-unsubscribe@e|^\s*(?:&gt;|>)?\s*Conditions d'utilisation et de la Charte sur la vie priv(?:ée|Ã©e), disponibles\s*$|^\s*(?:&gt;|>)?\s*Conditions d'utilisation et de la Charte sur la vie priv(?:ée|Ã©e)\.\s*$|^\s*(?:&gt;|>)?\s*conditions d'utilisation\.\s*$|^\s*(?:&gt;|>|\s)*,\s*disponibles\s*$)/i;
 
 const decoderCache = new Map();
 
@@ -967,6 +992,25 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+function normalizeForSearch(value) {
+  return String(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function summarizeText(value, maxLength = 220) {
+  const collapsed = String(value).replace(/\s+/g, " ").trim();
+  if (collapsed.length <= maxLength) return collapsed;
+  return `${collapsed.slice(0, maxLength).trimEnd()}...`;
+}
+
+function serializeInlineJson(value) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
 function repairMojibakeAccents(value) {
   let result = value;
   for (const [search, replacement] of MOJIBAKE_REPLACEMENTS) {
@@ -993,6 +1037,31 @@ function removeYahooUnsubscribe(value) {
     .replace(YAHOO_UNSUBSCRIBE_DUPLICATE_REGEX, "\n")
     .replace(YAHOO_UNSUBSCRIBE_LINE_DUPLICATE_REGEX, "\n")
     .replace(YAHOO_GROUP_LINKS_REGEX, "\n");
+}
+
+function removeYahooFooterLines(value) {
+  return value
+    .split(/\r?\n/)
+    .filter((line) => {
+      const normalized = line
+        .replace(/&gt;/gi, ">")
+        .replace(/^\s*(?:>\s*)+/, "")
+        .trim();
+
+      return !(
+        /^L'utilisation du service Yahoo!\s*Groupes est soumise à l'acceptation des$/i.test(normalized) ||
+        /^Conditions d'utilisation et de la Charte sur la vie priv(?:ée|Ã©e), disponibles$/i.test(normalized) ||
+        /^Conditions d'utilisation et de la Charte sur la vie priv(?:ée|Ã©e)\.$/i.test(normalized) ||
+        /^des Conditions d'utilisation et de la Charte sur la vie priv(?:ée|Ã©e)\.$/i.test(normalized) ||
+        /^L'utilisation de Yahoo!\s*Groupes est soumise à l'acceptation des\s*:$/i.test(normalized) ||
+        /^L'utilisation de Yahoo!\s*Groupes est soumise à l'acceptation des conditions d'utilisation\.$/i.test(normalized) ||
+        /^Liens Yahoo!\s*Groupes$/i.test(normalized) ||
+        /^Pour consulter votre groupe en ligne, acc(?:é|e)dez à\s*:$/i.test(normalized) ||
+        /^Pour vous d(?:é|e)sincrire de ce groupe, envoyez un mail à\s*:$/i.test(normalized) ||
+        /^Pour vous d(?:é|e)sabonner de ce groupe, envoyez un email à\s*:$/i.test(normalized)
+      );
+    })
+    .join("\n");
 }
 
 function removeYahooGroupLinksLines(value) {
@@ -1164,7 +1233,7 @@ function fallbackAuthorFromHeader(value) {
 
 function cleanMessageText(value) {
   const repairedValue = repairMojibakeAccents(value);
-  const cleaned = replaceDisplayNames(removeEmailPlaceholders(anonymizeEmails(removeYahooPromoLines(removeYahooMarkerLines(removeYahooGroupLinksLines(removeYahooUnsubscribe(repairedValue)))))
+  const cleaned = replaceDisplayNames(removeEmailPlaceholders(anonymizeEmails(removeYahooFooterLines(removeYahooPromoLines(removeYahooMarkerLines(removeYahooGroupLinksLines(removeYahooUnsubscribe(repairedValue))))))
     .replace(YAHOO_UNSUBSCRIBE_REGEX, "\n")
     .replace(YAHOO_GROUP_LINKS_REGEX, "\n")
     .replace(YAHOO_TRUE_SWITCH_PROMO_REGEX, "\n")
@@ -1178,7 +1247,7 @@ function cleanMessageText(value) {
     .replace(/\n{4,}/g, "\n\n\n")
     .trim()));
 
-  return removeYahooPromoLines(removeYahooMarkerLines(removeYahooGroupLinksLines(cleaned)))
+  return removeYahooFooterLines(removeYahooPromoLines(removeYahooMarkerLines(removeYahooGroupLinksLines(cleaned))))
     .replace(YAHOO_UNSUBSCRIBE_REGEX, "\n")
     .replace(YAHOO_TRUE_SWITCH_PROMO_REGEX, "\n")
     .replace(YAHOO_ANSWERS_SIGNATURE_REGEX, "\n")
@@ -1288,20 +1357,28 @@ async function readAboutBody() {
     return await readFile(ABOUT_SOURCE, "utf8");
   } catch (error) {
     if (error.code === "ENOENT") {
-      return `    <header class="hero">
+      return `    <section class="hero">
       <h1>A propos</h1>
       <p>Cette page sera complétée ultérieurement.</p>
-    </header>`;
+    </section>`;
     }
     throw error;
   }
 }
 
 function renderNav(conversations, { currentSlug = "", currentPage = "", relative = "." } = {}) {
-  const conversationPrefix = currentSlug ? "" : "conversations/";
+  const conversationPrefix = currentSlug ? "" : `${relative}/conversations/`;
+  const searchAction = `${relative}/recherche.html`;
   const staticLinks = `
     <a class="nav-page-link${currentPage === "home" ? " active" : ""}" href="${relative}/index.html">
       <span>Accueil</span>
+    </a>
+    <form class="nav-search-form" role="search" action="${searchAction}" method="get">
+      <label class="search-label" for="nav-search-input">Recherche</label>
+      <input id="nav-search-input" name="q" type="search" placeholder="Rechercher dans les messages..." autocomplete="off">
+    </form>
+    <a class="nav-page-link${(currentPage === "categories" || currentPage.startsWith("category:")) ? " active" : ""}" href="${relative}/categories.html">
+      <span>Categories</span>
     </a>
     <a class="nav-page-link${currentPage === "about" ? " active" : ""}" href="${relative}/about.html">
       <span>A propos</span>
@@ -1327,7 +1404,7 @@ async function existingConversationSlugs() {
   }
 }
 
-function pageShell({ title, description, body, nav, relative = ".", mainClass = "" }) {
+function pageShell({ title, description, body, nav, relative = ".", mainClass = "", extraScripts = "" }) {
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -1351,9 +1428,19 @@ function pageShell({ title, description, body, nav, relative = ".", mainClass = 
   <main class="archive-main${mainClass ? ` ${mainClass}` : ""}">
 ${body}
   </main>
+${extraScripts}
   <script src="${relative}/assets/archive.js"></script>
 </body>
 </html>`;
+}
+
+function renderSearchForm({ action = "recherche.html", variant = "search-panel", inputId = "message-search", inputValue = "" } = {}) {
+  return `<form class="${variant}" role="search" action="${action}" method="get" data-search-form>
+        <label class="search-label" for="${inputId}">Sujet, auteur ou contenu d'un message</label>
+        <input id="${inputId}" name="q" type="search" value="${escapeHtml(inputValue)}" placeholder="Exemple : stage beaujeu, federation, Dijon..." autocomplete="off">
+        <p class="search-help">Saisissez un ou plusieurs mots puis validez pour afficher les resultats.</p>
+        <div class="search-results" data-search-results hidden></div>
+      </form>`;
 }
 
 function renderMessage(message, index, conversationTitle) {
@@ -1380,6 +1467,7 @@ async function main() {
     await rm(OUT_DIR, { recursive: true, force: true });
   }
   await mkdir(OUT_CONVERSATIONS, { recursive: true });
+  await mkdir(OUT_CATEGORIES, { recursive: true });
   await cp(path.join(ROOT, "assets"), path.join(OUT_DIR, "assets"), { recursive: true, force: true });
 
   const files = await listEmlFiles(SOURCE_DIR);
@@ -1433,21 +1521,50 @@ async function main() {
         || existingSlugs.has(conversation.slug));
   const generatedMessages = conversationsToBuild.reduce((total, conversation) => total + conversation.messages.length, 0);
   const listedMessages = conversationsToList.reduce((total, conversation) => total + conversation.messages.length, 0);
+  const listedConversationBySlug = new Map(conversationsToList.map((conversation) => [conversation.slug, conversation]));
+
+  for (const conversation of conversations) {
+    conversation.searchText = normalizeForSearch([
+      conversation.title,
+      ...conversation.messages.map((message) => `${message.subject} ${message.from} ${message.text}`),
+    ].join(" "));
+  }
+
+  const searchEntries = conversations
+    .filter((conversation) => listedConversationBySlug.has(conversation.slug))
+    .flatMap((conversation) => conversation.messages.map((message, index) => ({
+      conversationTitle: conversation.title,
+      subject: message.subject,
+      from: message.from,
+      dateLabel: formatDate(message.date),
+      preview: summarizeText(message.text),
+      url: `conversations/${conversation.slug}.html#message-${index + 1}`,
+      searchText: normalizeForSearch(`${conversation.title} ${message.subject} ${message.from} ${message.text}`),
+    })));
+
+  const categories = CATEGORY_DEFINITIONS.map((category) => ({
+    ...category,
+    items: conversationsToList.filter((conversation) => category.matches(conversation)),
+  }));
+
   const nav = renderNav(conversationsToList, { currentPage: "home", relative: "." });
-  const indexBody = `    <header class="hero">
-      <p>Archives consultables en HTML statique</p>
+  const indexBody = `    <section class="hero">
       <h1>${TITLE}</h1>
-      <form class="search" role="search">
-        <label for="conversation-search">Rechercher une conversation</label>
-        <input id="conversation-search" type="search" placeholder="Sujet, date, nombre de messages">
-      </form>
-      <p>${listedMessages} messages regroupés en ${conversationsToList.length} conversations.</p>
-    </header>
-    <section class="conversation-list" data-conversation-list>
-${conversationsToList.map((conversation) => `      <article data-search="${escapeHtml(`${conversation.title} ${formatDate(conversation.firstDate)} ${conversation.messages.length}`.toLowerCase())}">
-        <h2><a href="conversations/${conversation.slug}.html">${escapeHtml(conversation.title)}</a></h2>
-        <p>${formatDate(conversation.firstDate)} · ${conversation.messages.length} message${conversation.messages.length > 1 ? "s" : ""}</p>
-      </article>`).join("\n")}
+      <p>Cette archive rassemble ${listedMessages} messages regroupes en ${conversationsToList.length} conversations. Pour mieux comprendre le projet et la methode de constitution du site, commencez par la page <a href="about.html">A propos</a>.</p>
+    </section>
+    <section class="home-section">
+      <h2>Explorer l'archive</h2>
+      <div class="category-list">
+        <article class="category-card">
+          <h3>Recherche</h3>
+          <p>Retrouvez un message par sujet, auteur ou contenu dans l'ensemble de l'archive.</p>
+          ${renderSearchForm({ action: "recherche.html", variant: "home-search-form", inputId: "home-message-search" })}
+        </article>
+        <article class="category-card">
+          <h3><a href="categories.html">Categories</a></h3>
+          <p>Parcourez les grandes categories thematiques et leurs conversations associees.</p>
+        </article>
+      </div>
     </section>`;
 
   await writeFile(path.join(OUT_DIR, "index.html"), pageShell({
@@ -1458,6 +1575,45 @@ ${conversationsToList.map((conversation) => `      <article data-search="${escap
     relative: ".",
   }), "utf8");
 
+  const searchBody = `    <section class="hero">
+      <h1>Recherche</h1>
+      <p>La recherche parcourt tous les messages et chaque resultat renvoie vers la conversation correspondante.</p>
+    </section>
+    <section class="home-section">
+      ${renderSearchForm({ action: "recherche.html", variant: "search-panel", inputId: "message-search" })}
+    </section>`;
+
+  await writeFile(path.join(OUT_DIR, "recherche.html"), pageShell({
+    title: `Recherche Â· ${TITLE}`,
+    description: "Recherche plein texte dans les archives de la mailing-list escrime_medievale.",
+    body: searchBody,
+    nav: renderNav(conversationsToList, { currentPage: "search", relative: "." }),
+    relative: ".",
+    extraScripts: `  <script>window.archiveSearchIndex = ${serializeInlineJson(searchEntries)};</script>`,
+  }), "utf8");
+
+  const categoriesBody = `    <section class="hero">
+      <h1>Categories</h1>
+      <p>Ces categories regroupent plusieurs conversations pour faciliter l'exploration thematique de l'archive.</p>
+    </section>
+    <section class="home-section">
+      <div class="category-list">
+${categories.map((category) => `        <article class="category-card">
+          <h2><a href="categories/${category.slug}.html">${escapeHtml(category.title)}</a></h2>
+          <p>${escapeHtml(category.description)}</p>
+          <p><strong>${category.items.length}</strong> conversation${category.items.length > 1 ? "s" : ""}</p>
+        </article>`).join("\n")}
+      </div>
+    </section>`;
+
+  await writeFile(path.join(OUT_DIR, "categories.html"), pageShell({
+    title: `Categories Â· ${TITLE}`,
+    description: "Categories thematiques des conversations de la mailing-list escrime_medievale.",
+    body: categoriesBody,
+    nav: renderNav(conversationsToList, { currentPage: "categories", relative: "." }),
+    relative: ".",
+  }), "utf8");
+
   await writeFile(path.join(OUT_DIR, "about.html"), pageShell({
     title: `A propos · ${TITLE}`,
     description: "Présentation de l'archive Mailing-List escrime_medievale.",
@@ -1465,6 +1621,28 @@ ${conversationsToList.map((conversation) => `      <article data-search="${escap
     nav: renderNav(conversationsToList, { currentPage: "about", relative: "." }),
     relative: ".",
   }), "utf8");
+
+  for (const category of categories) {
+    const categoryBody = `    <header class="conversation-header">
+      <p>${category.items.length} conversation${category.items.length > 1 ? "s" : ""}</p>
+      <h1>${escapeHtml(category.title)}</h1>
+      <p>${escapeHtml(category.intro)}</p>
+    </header>
+    <section class="conversation-list">
+${category.items.map((conversation) => `      <article>
+        <h2><a href="../conversations/${conversation.slug}.html">${escapeHtml(conversation.title)}</a></h2>
+        <p>${formatDate(conversation.firstDate)} · ${conversation.messages.length} message${conversation.messages.length > 1 ? "s" : ""}</p>
+      </article>`).join("\n")}
+    </section>`;
+
+    await writeFile(path.join(OUT_CATEGORIES, `${category.slug}.html`), pageShell({
+      title: `${category.title} · ${TITLE}`,
+      description: category.description,
+      body: categoryBody,
+      nav: renderNav(conversationsToList, { currentPage: `category:${category.slug}`, relative: ".." }),
+      relative: "..",
+    }), "utf8");
+  }
 
   for (const conversation of conversationsToBuild) {
     const previous = isFullBuild ? conversations[conversation.index - 1] : null;
@@ -1502,6 +1680,11 @@ ${conversation.messages.map((message, index) => renderMessage(message, index, co
     generatedConversations: conversationsToBuild.length,
     listedMessages,
     listedConversations: conversationsToList.length,
+    categories: categories.map((category) => ({
+      slug: category.slug,
+      title: category.title,
+      conversations: category.items.length,
+    })),
     autoSpaceMergedConversations: autoSpaceMergeReport,
   }, null, 2)}\n`, "utf8");
 
