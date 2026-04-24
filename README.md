@@ -59,21 +59,15 @@ commande depuis la racine du depot pour reutiliser le lien Vercel local dans
 `.vercel/project.json`, actuellement configure pour le projet
 `archive-escrime-medievale`.
 
-```bash
-npx vercel deploy --prod --yes --scope slandais-projects
-```
-
-Ne pas passer `dist` comme dossier a la commande `vercel deploy` depuis la
-racine : le CLI peut alors le traiter comme un projet Vercel distinct. La
-configuration `vercel.json` a la racine indique deja a Vercel de publier
-`dist/`.
-
-Pour automatiser le deploiement sans questions interactives, utiliser le script
-PowerShell suivant depuis la racine du depot :
+Une seule commande suffit, sans interaction, pour deployer vers
+`https://archive-escrime-medievale.vercel.app` :
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\deploy-prod.ps1
 ```
 
-Ce script verifie le lien Vercel local puis deploie en production avec
-`--yes`, sans utiliser `--cwd dist`.
+Ce script verifie le lien Vercel local, puis lance `vercel deploy --prod --yes`
+depuis la racine du depot. Ne pas passer `dist` comme dossier a la commande
+`vercel deploy` depuis la racine : le CLI peut alors le traiter comme un projet
+Vercel distinct. La configuration `vercel.json` a la racine indique deja a
+Vercel de publier `dist/`.

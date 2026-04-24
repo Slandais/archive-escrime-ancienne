@@ -1,8 +1,8 @@
 # Instructions pour les agents
 
 Ce projet concerne la creation d'une interface web HTML pour permettre l'acces
-aux archives de la mailing list "Escrime Ancienne".
-Le titre est "Archive Mailing-List Escrime Ancienne - 2003 a 2011"
+aux archives de la mailing list "Escrime Médiévale".
+Le titre est "Archive Mailing-List Escrime médiévale - 2003 a 2011"
 
 ## Principes de travail
 

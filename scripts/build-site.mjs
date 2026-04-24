@@ -3,7 +3,7 @@ import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/pro
 import path from "node:path";
 import { TextDecoder } from "node:util";
 
-const SITE_URL = (process.env.SITE_URL || "https://archive-escrime-ancienne.vercel.app").replace(/\/+$/, "");
+const SITE_URL = (process.env.SITE_URL || "https://archive-escrime-medievale.vercel.app").replace(/\/+$/, "");
 
 const ROOT = process.cwd();
 const SOURCE_DIR = path.join(ROOT, "ML escrime_medievale");
@@ -107,8 +107,17 @@ const PARTIAL_BUILD_CONVERSATION_KEYS = new Set([
   "international arms and armour conference",
   "commande collective",
   "commande collectivee artistique historique er",
+  "resultats de sondage pour escrime medievale",
+  "besoin de sources",
+  "appelez moi martial",
+  "traite allemand 1430",
+  "epee cape",
+  "apprentissage du combat",
   "stage d escrime ancienne a schiltigheim",
+  "stage d escrime ancienne de schiltigheim",
   "stage d escrime",
+  "stage i 33",
+  "stage d initiation au i 33",
   "dijon",
   "talhoffer",
   "merci",
@@ -186,7 +195,17 @@ const CONVERSATION_TITLE_MERGE_RULES = [
   {
     key: "commandecollective",
     from: new Date("2005-02-19T00:00:00+01:00"),
-    to: new Date("2005-02-25T00:00:00+01:00"),
+    to: new Date("2005-03-04T00:00:00+01:00"),
+  },
+  {
+    keys: ["commandecollective", "commandecollectiveeartistiquehistoriqueer"],
+    from: new Date("2005-02-19T00:00:00+01:00"),
+    to: new Date("2005-03-04T00:00:00+01:00"),
+  },
+  {
+    key: "resultatsdesondagepourescrimemedievale",
+    from: new Date("2004-10-02T00:00:00+02:00"),
+    to: new Date("2004-10-05T00:00:00+02:00"),
   },
   {
     key: "besoindesources",
@@ -199,6 +218,11 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2004-12-02T00:00:00+01:00"),
   },
   {
+    key: "traiteallemand1430",
+    from: new Date("2005-04-01T00:00:00+02:00"),
+    to: new Date("2005-04-13T00:00:00+02:00"),
+  },
+  {
     key: "escrimecroisee",
     from: new Date("2005-05-09T00:00:00+02:00"),
     to: new Date("2005-05-12T00:00:00+02:00"),
@@ -207,6 +231,11 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     key: "epecape",
     from: new Date("2005-06-15T00:00:00+02:00"),
     to: new Date("2005-06-22T00:00:00+02:00"),
+  },
+  {
+    key: "apprentissageducombat",
+    from: new Date("2005-11-02T00:00:00+01:00"),
+    to: new Date("2005-11-05T00:00:00+01:00"),
   },
   {
     key: "messerwallersteinplate63",
@@ -252,6 +281,31 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     key: "stagedescrimeancienneaschiltigheim",
     from: new Date("2005-12-31T00:00:00+01:00"),
     to: new Date("2006-02-04T00:00:00+01:00"),
+  },
+  {
+    key: "stagedescrimeancienneschiltigheim",
+    from: new Date("2006-02-03T00:00:00+01:00"),
+    to: new Date("2006-02-23T00:00:00+01:00"),
+  },
+  {
+    key: "stagei33",
+    from: new Date("2004-09-08T00:00:00+02:00"),
+    to: new Date("2004-09-17T00:00:00+02:00"),
+  },
+  {
+    key: "stagedinitiationaui33",
+    from: new Date("2004-02-01T00:00:00+01:00"),
+    to: new Date("2004-03-06T00:00:00+01:00"),
+  },
+  {
+    key: "stage",
+    from: new Date("2004-08-27T00:00:00+02:00"),
+    to: new Date("2004-09-10T00:00:00+02:00"),
+  },
+  {
+    key: "dijon2005",
+    from: new Date("2005-01-31T00:00:00+01:00"),
+    to: new Date("2005-05-03T00:00:00+02:00"),
   },
 ];
 const CANONICAL_SUBJECT_RULES = [

@@ -3,7 +3,6 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $vercelProjectFile = Join-Path $repoRoot ".vercel\project.json"
-$vercelArgs = @("--scope", "slandais-projects")
 $vercelProjectName = "archive-escrime-medievale"
 
 Push-Location $repoRoot
@@ -16,14 +15,14 @@ try {
 
     if ($shouldLink) {
         Write-Host "Association du depot au projet $vercelProjectName..."
-        & npx.cmd vercel link --yes --project $vercelProjectName @vercelArgs
+        & npx.cmd vercel link --yes --project $vercelProjectName
         if ($LASTEXITCODE -ne 0) {
             throw "Echec de 'vercel link'."
         }
     }
 
     Write-Host "Deploiement production depuis la racine du depot..."
-    & npx.cmd vercel deploy --prod --yes @vercelArgs
+    & npx.cmd vercel deploy --prod --yes
     if ($LASTEXITCODE -ne 0) {
         throw "Echec de 'vercel deploy'."
     }
