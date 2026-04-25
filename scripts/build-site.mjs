@@ -1691,6 +1691,8 @@ function pageShell({ title, description, body, nav, relative = ".", mainClass = 
   <meta name="author" content="${AUTHOR}">
   <meta name="description" content="${escapeHtml(description)}">
   <title>${escapeHtml(title)}</title>
+  <link rel="icon" type="image/png" href="${relative}/assets/favicon.ico">
+  <link rel="shortcut icon" type="image/png" href="${relative}/assets/favicon.ico">
   <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
   <link rel="stylesheet" href="${relative}/assets/archive.css">
 </head>
