@@ -1714,10 +1714,16 @@ ${extraScripts}
 </html>`;
 }
 
-function renderSearchForm({ action = "recherche.html", variant = "search-panel", inputId = "message-search", inputValue = "" } = {}) {
+function renderSearchForm({
+  action = "recherche.html",
+  variant = "search-panel",
+  inputId = "message-search",
+  inputValue = "",
+  placeholder = "Exemple : stage beaujeu, federation, Dijon...",
+} = {}) {
   return `<form class="${variant}" role="search" action="${action}" method="get" data-search-form>
         <label class="search-label" for="${inputId}">Sujet, auteur ou contenu d'un message</label>
-        <input id="${inputId}" name="q" type="search" value="${escapeHtml(inputValue)}" placeholder="Exemple : stage beaujeu, federation, Dijon..." autocomplete="off">
+        <input id="${inputId}" name="q" type="search" value="${escapeHtml(inputValue)}" placeholder="${escapeHtml(placeholder)}" autocomplete="off">
         <p class="search-help">Saisissez un ou plusieurs mots puis validez pour afficher les resultats.</p>
         <div class="search-results" data-search-results hidden></div>
       </form>`;
@@ -1840,7 +1846,12 @@ async function main() {
         <article class="category-card">
           <h3>Recherche</h3>
           <p>Retrouvez un message par sujet, auteur ou contenu dans l'ensemble de l'archive.</p>
-          ${renderSearchForm({ action: "recherche.html", variant: "home-search-form", inputId: "home-message-search" })}
+          ${renderSearchForm({
+            action: "recherche.html",
+            variant: "home-search-form",
+            inputId: "home-message-search",
+            placeholder: "Exemple : épée longue, talhoffer, Dijon, traduction",
+          })}
         </article>
         <article class="category-card">
           <h3><a href="categories.html">Categories</a></h3>

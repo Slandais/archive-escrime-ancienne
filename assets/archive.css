@@ -167,6 +167,11 @@ body {
   margin: 1.5rem 0 0;
 }
 
+.search-panel {
+  max-width: none;
+  width: 100%;
+}
+
 .search-label {
   display: block;
   font-weight: 600;
@@ -182,6 +187,7 @@ body {
   display: grid;
   gap: .85rem;
   margin-top: 1rem;
+  width: 100%;
 }
 
 .search-result,
@@ -216,8 +222,20 @@ body {
   margin-bottom: 0;
 }
 
+.search-panel input {
+  width: 100%;
+  margin: 0;
+  padding: .95rem 1rem;
+  font-size: 1.05rem;
+}
+
 .home-search-form {
   margin-top: 1rem;
+}
+
+.home-search-form input {
+  width: 100%;
+  margin: 0;
 }
 
 .home-search-form .search-help {

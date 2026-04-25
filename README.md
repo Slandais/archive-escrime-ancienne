@@ -15,6 +15,22 @@ Ce depot contient une version HTML statique des archives de la mailing-list
 Le site est genere sans dependance externe cote build. L'affichage utilise
 Simple.css via CDN, complete par une feuille locale.
 
+Pour verifier le rendu local, il faut servir `dist/` via HTTP plutot qu'ouvrir
+`dist/index.html` directement en `file://`, car certains navigateurs peuvent
+charger differemment les ressources et APIs dans ce mode.
+
+Depuis la racine du depot :
+
+```bash
+python3 -m http.server 8000 --directory dist
+```
+
+Puis ouvrir :
+
+```text
+http://127.0.0.1:8000/
+```
+
 ## Regeneration
 
 Depuis la racine du depot :
