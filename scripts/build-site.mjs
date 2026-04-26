@@ -235,6 +235,11 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     from: new Date("2004-08-31T00:00:00+02:00"),
     to: new Date("2004-09-01T00:00:00+02:00"),
   },
+  {
+    key: "stagedescrimeancienneaschiltigheim",
+    from: new Date("2005-12-31T00:00:00+01:00"),
+    to: new Date("2006-02-04T00:00:00+01:00"),
+  },
 ];
 const CANONICAL_SUBJECT_RULES = [
   {
