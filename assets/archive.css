@@ -1,3 +1,29 @@
+html {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: light;
+  }
+}
+
+:root {
+  --bg: #fff;
+  --accent-bg: #f5f7ff;
+  --text: #212121;
+  --text-light: #585858;
+  --border: #898ea4;
+  --accent: #0d47a1;
+  --accent-hover: #1266e2;
+  --accent-text: var(--bg);
+  --code: #d81b60;
+  --preformatted: #444;
+  --marked: #fd3;
+  --disabled: #efefef;
+  scrollbar-color: #aeb8d6 #eef2fb;
+}
+
 body {
   --content-gutter: 2rem;
   --content-gutter-right: 1rem;
@@ -10,6 +36,25 @@ body {
   max-width: none;
   margin: 0;
   padding: 0;
+}
+
+*::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #eef2fb;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #aeb8d6;
+  border: 3px solid #eef2fb;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #92a0ca;
 }
 
 .menu-toggle {
@@ -323,8 +368,11 @@ body {
 .message-header-row {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: .75rem;
+  gap: .4rem;
+}
+
+.message-header-row > .message-permalink {
+  margin-left: auto;
 }
 
 .message-permalink,
@@ -332,16 +380,17 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.35rem;
-  min-height: 2.35rem;
-  padding: 0 .55rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0 .7rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: .7rem;
   background: var(--bg);
   color: var(--text);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: .95rem;
   text-decoration: none;
+  flex: 0 0 auto;
 }
 
 .share-icon {

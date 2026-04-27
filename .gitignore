@@ -4,3 +4,4 @@ ML escrime_medievale/
 dist/
 
 .vercel
+.env*.local
