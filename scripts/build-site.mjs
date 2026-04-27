@@ -3,6 +3,8 @@ import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/pro
 import path from "node:path";
 import { TextDecoder } from "node:util";
 
+const SITE_URL = (process.env.SITE_URL || "https://archive-escrime-ancienne.vercel.app").replace(/\/+$/, "");
+
 const ROOT = process.cwd();
 const SOURCE_DIR = path.join(ROOT, "ML escrime_medievale");
 const OUT_DIR = path.join(ROOT, "dist");
@@ -1698,7 +1700,11 @@ function pageShell({
   extraScripts = "",
   socialTitle = title,
   socialDescription = description,
+  canonicalPath = null,
+  robots = "index,follow",
+  extraHead = "",
 }) {
+  const canonicalUrl = canonicalPath ? `${SITE_URL}${canonicalPath.startsWith("/") ? canonicalPath : `/${canonicalPath}`}` : null;
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -1706,13 +1712,17 @@ function pageShell({
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="author" content="${AUTHOR}">
   <meta name="description" content="${escapeHtml(description)}">
+  <meta name="robots" content="${escapeHtml(robots)}">
   <title>${escapeHtml(title)}</title>
+${canonicalUrl ? `  <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
+` : ""}  <meta property="og:site_name" content="${escapeHtml(TITLE)}">
   <meta property="og:title" content="${escapeHtml(socialTitle)}">
   <meta property="og:description" content="${escapeHtml(socialDescription)}">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="${escapeHtml(socialTitle)}">
   <meta name="twitter:description" content="${escapeHtml(socialDescription)}">
+${extraHead ? `${extraHead}\n` : ""}  <meta name="theme-color" content="#1d2b36">
   <link rel="icon" type="image/png" href="${relative}/assets/favicon.ico">
   <link rel="shortcut icon" type="image/png" href="${relative}/assets/favicon.ico">
   <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
@@ -1780,6 +1790,33 @@ ${messageTitle}      <a class="message-permalink" href="#${messageAnchor}" data-
   </header>
   <pre>${escapeHtml(message.text)}</pre>
 </article>`;
+}
+
+function buildSitemap(conversationsToList, categories) {
+  const urls = [
+    "/",
+    "/about.html",
+    "/categories.html",
+    "/recherche.html",
+    ...categories.map((category) => `/categories/${category.slug}.html`),
+    ...conversationsToList.map((conversation) => `/conversations/${conversation.slug}.html`),
+  ];
+  const uniqueUrls = [...new Set(urls)];
+  const lastmod = new Date().toISOString().slice(0, 10);
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${uniqueUrls.map((url) => `  <url><loc>${SITE_URL}${url}</loc><lastmod>${lastmod}</lastmod></url>`).join("\n")}
+</urlset>
+`;
+}
+
+function buildRobotsTxt() {
+  return `User-agent: *
+Allow: /
+Disallow: /recherche.html
+
+Sitemap: ${SITE_URL}/sitemap.xml
+`;
 }
 
 async function main() {
@@ -1903,6 +1940,19 @@ async function main() {
     body: indexBody,
     nav,
     relative: ".",
+    canonicalPath: "/",
+    extraHead: `  <script type="application/ld+json">${JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: TITLE,
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${SITE_URL}/recherche.html?q={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    })}</script>`,
   }), "utf8");
 
   const searchBody = `    <section class="hero">
@@ -1920,6 +1970,8 @@ async function main() {
     nav: renderNav(conversationsToList, { currentPage: "search", relative: "." }),
     relative: ".",
     extraScripts: `  <script>window.archiveSearchIndex = ${serializeInlineJson(searchEntries)};</script>`,
+    canonicalPath: "/recherche.html",
+    robots: "noindex,follow",
   }), "utf8");
 
   const categoriesBody = `    <section class="hero">
@@ -1942,6 +1994,7 @@ ${categories.map((category) => `        <article class="category-card">
     body: categoriesBody,
     nav: renderNav(conversationsToList, { currentPage: "categories", relative: "." }),
     relative: ".",
+    canonicalPath: "/categories.html",
   }), "utf8");
 
   await writeFile(path.join(OUT_DIR, "about.html"), pageShell({
@@ -1950,6 +2003,7 @@ ${categories.map((category) => `        <article class="category-card">
     body: await readAboutBody(),
     nav: renderNav(conversationsToList, { currentPage: "about", relative: "." }),
     relative: ".",
+    canonicalPath: "/about.html",
   }), "utf8");
 
   for (const category of categories) {
@@ -1971,6 +2025,14 @@ ${category.items.map((conversation) => `      <article>
       body: categoryBody,
       nav: renderNav(conversationsToList, { currentPage: `category:${category.slug}`, relative: ".." }),
       relative: "..",
+      canonicalPath: `/categories/${category.slug}.html`,
+      extraHead: `  <script type="application/ld+json">${JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: category.title,
+        url: `${SITE_URL}/categories/${category.slug}.html`,
+        description: category.description,
+      })}</script>`,
     }), "utf8");
   }
 
@@ -1998,6 +2060,20 @@ ${conversation.messages.map((message, index) => renderMessage(message, index, co
       mainClass: "conversation-main",
       socialTitle: conversation.title,
       socialDescription: `Conversation "${conversation.title}" de la mailing-list escrime_medievale.`,
+      canonicalPath: `/conversations/${conversation.slug}.html`,
+      extraHead: `  <script type="application/ld+json">${JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "DiscussionForumPosting",
+        headline: conversation.title,
+        datePublished: conversation.firstDate.toISOString(),
+        dateModified: conversation.lastDate.toISOString(),
+        mainEntityOfPage: `${SITE_URL}/conversations/${conversation.slug}.html`,
+        isPartOf: {
+          "@type": "WebSite",
+          name: TITLE,
+          url: SITE_URL,
+        },
+      })}</script>`,
     }), "utf8");
   }
 
@@ -2023,6 +2099,8 @@ ${conversation.messages.map((message, index) => renderMessage(message, index, co
   if (isFullBuild) {
     await writeFile(path.join(OUT_DIR, "body-email-occurrences.md"), renderBodyEmailReport(messages), "utf8");
   }
+  await writeFile(path.join(OUT_DIR, "robots.txt"), buildRobotsTxt(), "utf8");
+  await writeFile(path.join(OUT_DIR, "sitemap.xml"), buildSitemap(conversationsToList, categories), "utf8");
   await writeFile(path.join(OUT_DIR, "vercel.json"), `${JSON.stringify({
     buildCommand: null,
     outputDirectory: ".",
