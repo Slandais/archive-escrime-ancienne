@@ -243,6 +243,11 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2005-04-13T00:00:00+02:00"),
   },
   {
+    key: "d4",
+    from: new Date("2005-04-24T00:00:00+02:00"),
+    to: new Date("2005-04-29T00:00:00+02:00"),
+  },
+  {
     key: "escrimecroisee",
     from: new Date("2005-05-09T00:00:00+02:00"),
     to: new Date("2005-05-12T00:00:00+02:00"),
@@ -251,6 +256,16 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     key: "epecape",
     from: new Date("2005-06-15T00:00:00+02:00"),
     to: new Date("2005-06-22T00:00:00+02:00"),
+  },
+  {
+    key: "lesescrimes",
+    from: new Date("2004-08-31T00:00:00+02:00"),
+    to: new Date("2004-09-12T00:00:00+02:00"),
+  },
+  {
+    key: "techniqueavecunehallebarde",
+    from: new Date("2005-04-05T00:00:00+02:00"),
+    to: new Date("2005-04-08T00:00:00+02:00"),
   },
   {
     key: "apprentissageducombat",
