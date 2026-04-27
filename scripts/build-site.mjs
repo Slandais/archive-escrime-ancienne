@@ -10,6 +10,7 @@ const OUT_CONVERSATIONS = path.join(OUT_DIR, "conversations");
 const OUT_CATEGORIES = path.join(OUT_DIR, "categories");
 const ABOUT_SOURCE = path.join(ROOT, "about.html");
 const TITLE = "Archive Mailing-List escrime_medievale - 2003 à 2011";
+const SITE_DESCRIPTION = "Archives HTML de la mailing-list escrime_medievale de 2003 à 2011.";
 const AUTHOR = "Simon LANDAIS pour la FFAMHE";
 const BUILD_MODES = new Set(["partial", "full"]);
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -1687,7 +1688,17 @@ async function existingConversationSlugs() {
   }
 }
 
-function pageShell({ title, description, body, nav, relative = ".", mainClass = "", extraScripts = "" }) {
+function pageShell({
+  title,
+  description = SITE_DESCRIPTION,
+  body,
+  nav,
+  relative = ".",
+  mainClass = "",
+  extraScripts = "",
+  socialTitle = title,
+  socialDescription = description,
+}) {
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -1696,6 +1707,12 @@ function pageShell({ title, description, body, nav, relative = ".", mainClass = 
   <meta name="author" content="${AUTHOR}">
   <meta name="description" content="${escapeHtml(description)}">
   <title>${escapeHtml(title)}</title>
+  <meta property="og:title" content="${escapeHtml(socialTitle)}">
+  <meta property="og:description" content="${escapeHtml(socialDescription)}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="${escapeHtml(socialTitle)}">
+  <meta name="twitter:description" content="${escapeHtml(socialDescription)}">
   <link rel="icon" type="image/png" href="${relative}/assets/favicon.ico">
   <link rel="shortcut icon" type="image/png" href="${relative}/assets/favicon.ico">
   <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
@@ -1738,10 +1755,25 @@ function renderMessage(message, index, conversationTitle) {
   const messageTitle = message.subject === conversationTitle
     ? ""
     : `    <h2>${escapeHtml(message.subject)}</h2>\n`;
+  const messageAnchor = `message-${index + 1}`;
 
-  return `<article class="message-panel" id="message-${index + 1}">
+  return `<article class="message-panel" id="${messageAnchor}">
   <header>
-${messageTitle}    <dl>
+    <div class="message-header-row">
+${messageTitle}      <a class="message-permalink" href="#${messageAnchor}" data-copy-message-link aria-label="Copier le lien vers ce message" title="Copier le lien vers ce message">
+        <span aria-hidden="true">🔗</span>
+      </a>
+      <button class="share-message" type="button" data-share-message data-share-title="${escapeHtml(conversationTitle)}" data-share-url="#${messageAnchor}" aria-label="Partager ce message" title="Partager ce message">
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="share-icon">
+          <line x1="8.6" y1="11.1" x2="16" y2="6.5" />
+          <line x1="8.6" y1="12.9" x2="16" y2="17.5" />
+          <circle cx="6" cy="12" r="2.1" />
+          <circle cx="18" cy="6" r="2.1" />
+          <circle cx="18" cy="18" r="2.1" />
+        </svg>
+      </button>
+    </div>
+    <dl>
       <div><dd>${escapeHtml(message.from)}</dd></div>
       <div><dd>${escapeHtml(formatDate(message.date))}</dd></div>
     </dl>
@@ -1964,6 +1996,8 @@ ${conversation.messages.map((message, index) => renderMessage(message, index, co
       }),
       relative: "..",
       mainClass: "conversation-main",
+      socialTitle: conversation.title,
+      socialDescription: `Conversation "${conversation.title}" de la mailing-list escrime_medievale.`,
     }), "utf8");
   }
 

@@ -320,6 +320,46 @@ body {
   font-size: 1.2rem;
 }
 
+.message-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.message-permalink,
+.share-message {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  padding: 0 .55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.share-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.message-permalink:hover,
+.share-message:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
 .message-panel dl {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));

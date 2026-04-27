@@ -163,3 +163,46 @@ for (const messageBody of document.querySelectorAll(".message-panel pre")) {
     .replace(/\n{4,}/g, "\n\n\n")
     .trim();
 }
+
+for (const copyLinkButton of document.querySelectorAll("[data-copy-message-link]")) {
+  copyLinkButton.addEventListener("click", async (event) => {
+    event.preventDefault();
+    const url = new URL(copyLinkButton.getAttribute("href") ?? window.location.hash, window.location.href).toString();
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        copyLinkButton.setAttribute("aria-label", "Lien copié dans le presse-papiers");
+        copyLinkButton.setAttribute("title", "Lien copié dans le presse-papiers");
+        return;
+      }
+    } catch (error) {
+      // On garde le comportement de secours ci-dessous.
+    }
+
+    window.location.hash = copyLinkButton.getAttribute("href")?.slice(1) ?? "";
+  });
+}
+
+for (const shareButton of document.querySelectorAll("[data-share-message]")) {
+  shareButton.addEventListener("click", async () => {
+    const title = shareButton.getAttribute("data-share-title") ?? document.title;
+    const relativeUrl = shareButton.getAttribute("data-share-url") ?? window.location.pathname;
+    const url = new URL(relativeUrl, window.location.href).toString();
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text: title,
+          url,
+        });
+        return;
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+      }
+    }
+
+    window.location.href = url;
+  });
+}
