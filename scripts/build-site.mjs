@@ -153,9 +153,24 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2004-03-03T00:00:00+01:00"),
   },
   {
+    keys: ["stagedinitiationaui33", "stagedinitiation"],
+    from: new Date("2004-02-28T00:00:00+01:00"),
+    to: new Date("2004-03-20T00:00:00+01:00"),
+  },
+  {
     key: "tenueepeelonguecompareealatenudusabrejaponais",
     from: new Date("2004-04-12T00:00:00+02:00"),
     to: new Date("2004-04-15T00:00:00+02:00"),
+  },
+  {
+    key: "tenueepeelonguecompareealatenudusabrejaponais",
+    from: new Date("2004-04-11T00:00:00+02:00"),
+    to: new Date("2004-04-16T00:00:00+02:00"),
+  },
+  {
+    key: "lexiquei33",
+    from: new Date("2004-07-15T00:00:00+02:00"),
+    to: new Date("2004-07-29T00:00:00+02:00"),
   },
   {
     key: "lateralisationenepeeadeuxmains",
@@ -213,6 +228,11 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2004-11-02T00:00:00+01:00"),
   },
   {
+    key: "besoindesources",
+    from: new Date("2004-10-27T00:00:00+02:00"),
+    to: new Date("2004-11-03T00:00:00+01:00"),
+  },
+  {
     key: "appelezmoimartial",
     from: new Date("2004-11-26T00:00:00+01:00"),
     to: new Date("2004-12-02T00:00:00+01:00"),
@@ -263,6 +283,11 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2007-06-30T00:00:00+02:00"),
   },
   {
+    key: "furusiyya",
+    from: new Date("2007-06-26T00:00:00+02:00"),
+    to: new Date("2007-07-01T00:00:00+02:00"),
+  },
+  {
     key: "deladisparitiondeladague",
     from: new Date("2004-10-29T00:00:00+01:00"),
     to: new Date("2004-10-30T00:00:00+01:00"),
@@ -276,6 +301,11 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     key: "retoursurflammes",
     from: new Date("2004-08-31T00:00:00+02:00"),
     to: new Date("2004-09-01T00:00:00+02:00"),
+  },
+  {
+    key: "deshordeshurlantesdechevaliersdeferlent",
+    from: new Date("2009-05-08T00:00:00+02:00"),
+    to: new Date("2009-05-11T00:00:00+02:00"),
   },
   {
     key: "stagedescrimeancienneaschiltigheim",
@@ -1976,7 +2006,7 @@ async function main() {
   const nav = renderNav(conversationsToList, { currentPage: "home", relative: "." });
   const indexBody = `    <section class="hero">
       <h1>${TITLE}</h1>
-      <p>Cette archive rassemble ${listedMessages} messages regroupes en ${conversationsToList.length} conversations. Pour mieux comprendre le projet et la methode de constitution du site, commencez par la page <a href="about.html">A propos</a>.</p>
+      <p>Cette archive rassemble les messages de la mailing-list escrime_medievale, active sur "Yahoo ! Groupes" jusqu'en 2011. Elle documente une période fondatrice pour les Arts Martiaux Historiques Européens (AMHE) francophones. Pour mieux comprendre le projet et la methode de constitution du site, commencez par la page <a href="about.html">A propos</a>.</p>
     </section>
     <section class="home-section">
       <h2>Explorer l'archive</h2>
