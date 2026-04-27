@@ -189,6 +189,16 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2005-02-25T00:00:00+01:00"),
   },
   {
+    key: "besoindesources",
+    from: new Date("2004-10-28T00:00:00+02:00"),
+    to: new Date("2004-11-02T00:00:00+01:00"),
+  },
+  {
+    key: "appelezmoimartial",
+    from: new Date("2004-11-26T00:00:00+01:00"),
+    to: new Date("2004-12-02T00:00:00+01:00"),
+  },
+  {
     key: "escrimecroisee",
     from: new Date("2005-05-09T00:00:00+02:00"),
     to: new Date("2005-05-12T00:00:00+02:00"),
