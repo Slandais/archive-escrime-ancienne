@@ -15,6 +15,15 @@ Ce depot contient une version HTML statique des archives de la mailing-list
 Le site est genere sans dependance externe cote build. L'affichage utilise
 Simple.css via CDN, complete par une feuille locale.
 
+## Installation
+
+Depuis la racine du depot, installer les dependances Node.js avant de lancer le
+build ou les tests :
+
+```bash
+npm install
+```
+
 Pour verifier le rendu local, il faut servir `dist/` via HTTP plutot qu'ouvrir
 `dist/index.html` directement en `file://`, car certains navigateurs peuvent
 charger differemment les ressources et APIs dans ce mode.
