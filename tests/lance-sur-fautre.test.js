@@ -30,7 +30,7 @@ describe("fusion des conversations", () => {
     );
 
     expect(i33Files).toEqual(["2004-09-08-i33.html"]);
-    expect(siteData.listedConversations).toBe(399);
+    expect(siteData.listedConversations).toBe(395);
   });
 
   it("fusionne les conversations retour de flamme de 2004", async () => {
@@ -41,7 +41,7 @@ describe("fusion des conversations", () => {
         file === "2004-08-31-retour-sur-flammes.html",
     );
 
-    expect(retourFiles).toEqual(["2004-08-31-retour-de-flamme.html"]);
+    expect(retourFiles).toEqual(["2004-08-31-retour-sur-flammes.html"]);
   });
 
   it("fusionne les conversations stage equitation xii s de 2004", async () => {
@@ -55,18 +55,18 @@ describe("fusion des conversations", () => {
     expect(stageFiles).toEqual(["2004-10-14-stage-equitation-xii-s.html"]);
   });
 
-  it("ne conserve qu'une seule conversation retour de flamme dans le sommaire", async () => {
-    const siteData = JSON.parse(await readFile(SITE_DATA_PATH, "utf8"));
-    const entries = siteData.autoSpaceMergedConversations.filter(
-      (conversation) =>
-        conversation.mergedTitle === "Retour de flamme" ||
-        conversation.mergedTitle === "Retour sur flammes",
+  it("ne conserve qu'une seule conversation retour de flammes dans le sommaire", async () => {
+    const files = await readdir(CONVERSATIONS_DIR);
+    const retourFiles = files.filter(
+      (file) =>
+        file === "2004-08-31-retour-de-flamme.html" ||
+        file === "2004-08-31-retour-sur-flammes.html",
     );
 
-    expect(entries).toHaveLength(1);
+    expect(retourFiles).toHaveLength(1);
   });
 
-  it("fusionne le message du 15 septembre 2004 dans Escrime médiévale ou artistique Info", async () => {
+  it("fusionne le message du 15 septembre 2004 dans Escrime mÃ©diÃ©vale ou artistique Info", async () => {
     const files = await readdir(CONVERSATIONS_DIR);
     const infoFiles = files.filter(
       (file) =>
@@ -86,5 +86,23 @@ describe("fusion des conversations", () => {
     );
 
     expect(hordesFiles).toEqual(["2009-05-09-des-hordes-hurlantes-de-chevaliers-deferlent.html"]);
+  });
+
+  it("separe Langen Ort de commande collective et fusionne les messages de fevrier 2005", async () => {
+    const files = await readdir(CONVERSATIONS_DIR);
+    expect(files).toContain("2005-02-19-commande-collective.html");
+    expect(files).toContain("2005-02-21-langen-ort.html");
+
+    const commandeCollective = await readFile(
+      path.join(CONVERSATIONS_DIR, "2005-02-19-commande-collective.html"),
+      "utf8",
+    );
+    const langenOrt = await readFile(
+      path.join(CONVERSATIONS_DIR, "2005-02-21-langen-ort.html"),
+      "utf8",
+    );
+
+    expect(commandeCollective).not.toContain("<h2>Langen Ort</h2>");
+    expect(langenOrt).toContain("<h1>Langen Ort</h1>");
   });
 });
