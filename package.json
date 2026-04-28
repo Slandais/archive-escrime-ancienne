@@ -1,0 +1,11 @@
+{
+  "name": "archive-escrime-ancienne",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --pool threads --poolOptions.threads.singleThread"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
+  }
+}
