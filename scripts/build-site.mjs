@@ -1607,6 +1607,13 @@ function mergeConversationsByTitles(conversations, titles) {
   };
 }
 
+function renameConversationTitle(conversations, fromTitle, toTitle) {
+  const conversation = conversations.find((item) => item.title === fromTitle);
+  if (!conversation) return conversations;
+  conversation.title = toTitle;
+  return conversations;
+}
+
 function splitConversationMessages(items) {
   if (items.length === 0) return [];
 
@@ -2258,6 +2265,98 @@ async function main() {
   ]);
   conversations = vocabulaireMerge.conversations;
   if (vocabulaireMerge.merged) forcedMergeReport.push(vocabulaireMerge.merged);
+
+  const unknownMerge = mergeConversationsByTitles(conversations, [
+    "(unknown)",
+    "(unknown) sondage manque de participation",
+  ]);
+  conversations = unknownMerge.conversations;
+  if (unknownMerge.merged) forcedMergeReport.push(unknownMerge.merged);
+  conversations = renameConversationTitle(conversations, "(unknown)", "sondage manque de participation");
+
+  const origineCimetterreMerge = mergeConversationsByTitles(conversations, [
+    "Origine cimetterre",
+    "Origine cimetterre decouvert !",
+  ]);
+  conversations = origineCimetterreMerge.conversations;
+  if (origineCimetterreMerge.merged) forcedMergeReport.push(origineCimetterreMerge.merged);
+
+  const dijon2004Merge = mergeConversationsByTitles(conversations, [
+    "du nouveau sur http://tailleestoc.chez.tiscali.fr/dijon2004/",
+    "dijon 2004 : programme etc",
+  ]);
+  conversations = dijon2004Merge.conversations;
+  if (dijon2004Merge.merged) forcedMergeReport.push(dijon2004Merge.merged);
+
+  const thibaultMerge = mergeConversationsByTitles(conversations, [
+    "Thibault",
+    "Thibault (ex Systema)",
+    "thibaut",
+  ]);
+  conversations = thibaultMerge.conversations;
+  if (thibaultMerge.merged) forcedMergeReport.push(thibaultMerge.merged);
+
+  const stageEscrimeCivileMerge = mergeConversationsByTitles(conversations, [
+    "Stage Escrime civile",
+    "Stage Escrime ci vile",
+  ]);
+  conversations = stageEscrimeCivileMerge.conversations;
+  if (stageEscrimeCivileMerge.merged) forcedMergeReport.push(stageEscrimeCivileMerge.merged);
+
+  const combatArmureMerge = mergeConversationsByTitles(conversations, [
+    "Sans sujet",
+    "!SPAM?! Re: !SPAM?! Re:",
+    "!SPAM?! Re: !SPAM?! Re: !SPAM?! Re: !SPAM?! Re:",
+    "[HS] Re: !SPAM?! Re: !SPAM?! Re: !SPAM?! Re: !SPAM?! Re:",
+  ]);
+  conversations = combatArmureMerge.conversations;
+  if (combatArmureMerge.merged) forcedMergeReport.push(combatArmureMerge.merged);
+  conversations = renameConversationTitle(conversations, "Sans sujet", "combat en armure");
+
+  const stageSpectacleMerge = mergeConversationsByTitles(conversations, [
+    "stage escrime de spectacle",
+    "Stage Escrime de spectacle",
+  ]);
+  conversations = stageSpectacleMerge.conversations;
+  if (stageSpectacleMerge.merged) forcedMergeReport.push(stageSpectacleMerge.merged);
+
+  const zweihanderMerge = mergeConversationsByTitles(conversations, [
+    "Zweihander",
+    "Le mythe de la Zweihander",
+  ]);
+  conversations = zweihanderMerge.conversations;
+  if (zweihanderMerge.merged) forcedMergeReport.push(zweihanderMerge.merged);
+
+  const messerMerge = mergeConversationsByTitles(conversations, [
+    "Escrime au messer.",
+    "Escrime au messer.",
+  ]);
+  conversations = messerMerge.conversations;
+  if (messerMerge.merged) forcedMergeReport.push(messerMerge.merged);
+
+  const talhofferMerge = mergeConversationsByTitles(conversations, [
+    "Talhoffer",
+    "Talhoffer & Dragon",
+  ]);
+  conversations = talhofferMerge.conversations;
+  if (talhofferMerge.merged) forcedMergeReport.push(talhofferMerge.merged);
+
+  const etauMerge = mergeConversationsByTitles(conversations, [
+    "L'étau se resserre ?",
+    "L'étau se resserre ?",
+  ]);
+  conversations = etauMerge.conversations;
+  if (etauMerge.merged) forcedMergeReport.push(etauMerge.merged);
+
+  const questionFondMerge = mergeConversationsByTitles(conversations, [
+    "Question de fond sur liecthenauer et consorts.",
+    "Question de fond (bis)",
+    "Viste (was Re: question de fond...)",
+    "Viste, viste , rage",
+    "Question de fond (bis)",
+  ]);
+  conversations = questionFondMerge.conversations;
+  if (questionFondMerge.merged) forcedMergeReport.push(questionFondMerge.merged);
 
   assignConversationSlugs(conversations);
 
