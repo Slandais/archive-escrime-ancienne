@@ -143,11 +143,94 @@ const FORCED_ROOT_CONVERSATION_KEYS = new Set([
   "chilvary booksel",
   "langen ort",
 ]);
+const STAY_WITH_ROOT_CONVERSATION_KEYS = new Set([
+  "lexiquei33",
+  "escrimeartistiquelevallois",
+  "2epicedulignitzer",
+  "enarmesauxvme",
+  "unmeyervendreauxenchres3500euro",
+  "unknownsondagemanquedeparticipation",
+  "fautrelivredesmtiers",
+  "pebouclierprochedui33",
+  "gauchersetpivots",
+  "commandecollectiveeartistiquehistoriqueer",
+  "suiteetfinavisexterieur",
+  "entranementcheval",
+  "lemesserselonlckuchner",
+  "aprosposdescrimeancienne",
+  "stagedescrimeancienneschiltigheim",
+  "stagedescrimeanciennedeschiltigheim",
+  "productiondpesenboisrgionparisienne",
+  "lancefautretroisimeprise",
+  "stageschiltigheim",
+  "petiteerreurreannoncedestagelille",
+  "vocabulairedescrimemdivalauxviie",
+]);
 const CONVERSATION_TITLE_MERGE_RULES = [
   {
     key: "stagesdescrime",
     from: new Date("2004-01-01T00:00:00+01:00"),
     to: new Date("2004-02-01T00:00:00+01:00"),
+  },
+  {
+    keys: ["2epicedulignitzer", "unknown"],
+    from: new Date("2004-06-30T00:00:00+02:00"),
+    to: new Date("2004-07-02T00:00:00+02:00"),
+  },
+  {
+    key: "escrimemdivale",
+    from: new Date("2004-09-04T00:00:00+02:00"),
+    to: new Date("2004-09-06T00:00:00+02:00"),
+  },
+  {
+    key: "unmeyervendreauxenchres3500euro",
+    from: new Date("2004-09-09T00:00:00+02:00"),
+    to: new Date("2004-09-11T00:00:00+02:00"),
+  },
+  {
+    key: "fautrelivredesmtiers",
+    from: new Date("2004-10-04T00:00:00+02:00"),
+    to: new Date("2004-10-06T00:00:00+02:00"),
+  },
+  {
+    key: "poucelabasedelpe",
+    from: new Date("2005-02-02T00:00:00+01:00"),
+    to: new Date("2005-02-04T00:00:00+01:00"),
+  },
+  {
+    key: "stagescett",
+    from: new Date("2005-05-08T00:00:00+02:00"),
+    to: new Date("2005-05-10T00:00:00+02:00"),
+  },
+  {
+    key: "toujoursquestiondetirlarc",
+    from: new Date("2005-10-11T00:00:00+02:00"),
+    to: new Date("2005-10-13T00:00:00+02:00"),
+  },
+  {
+    keys: ["stagedescrimeancienneschiltigheim", "stagedescrimeanciennedeschiltigheim"],
+    from: new Date("2005-10-26T00:00:00+02:00"),
+    to: new Date("2005-10-28T00:00:00+02:00"),
+  },
+  {
+    key: "productiondpesenboisrgionparisienne",
+    from: new Date("2005-12-06T00:00:00+01:00"),
+    to: new Date("2005-12-08T00:00:00+01:00"),
+  },
+  {
+    key: "dernireslivraisonsgallica",
+    from: new Date("2006-02-09T00:00:00+01:00"),
+    to: new Date("2006-02-11T00:00:00+01:00"),
+  },
+  {
+    key: "lancefautretroisimeprise",
+    from: new Date("2006-08-29T00:00:00+02:00"),
+    to: new Date("2006-08-31T00:00:00+02:00"),
+  },
+  {
+    key: "vocabulairedescrimemdivalauxviie",
+    from: new Date("2007-06-13T00:00:00+02:00"),
+    to: new Date("2007-06-30T00:00:00+02:00"),
   },
   {
     key: "bouclierceltes",
@@ -1207,24 +1290,36 @@ function buildThreads(messages) {
   const visited = new Set();
   const conversations = [];
 
-  function collect(node, bucket) {
+  function collect(node, bucket, rootKey, deferredRoots) {
     if (visited.has(node.messageId) || !node.message) return;
     visited.add(node.messageId);
     bucket.push(node.message);
     const children = [...node.children]
       .sort((a, b) => (a.message?.date - b.message?.date) || a.messageId.localeCompare(b.messageId));
     for (const child of children) {
-      collect(child, bucket);
+      const childKey = child.message?.key ?? "";
+      if (childKey && childKey !== rootKey && !STAY_WITH_ROOT_CONVERSATION_KEYS.has(childKey)) {
+        deferredRoots.push(child);
+        continue;
+      }
+      collect(child, bucket, rootKey, deferredRoots);
     }
   }
 
   const orderedRoots = roots.sort((a, b) => (a.message.date - b.message.date) || a.messageId.localeCompare(b.messageId));
-  for (const root of orderedRoots) {
+  const queue = [...orderedRoots];
+  for (let index = 0; index < queue.length; index += 1) {
+    const root = queue[index];
     const items = [];
-    collect(root, items);
+    const deferredRoots = [];
+    const rootKey = root.message?.key ?? "";
+    collect(root, items, rootKey, deferredRoots);
     if (items.length > 0) {
       items.sort((a, b) => (a.date - b.date) || a.file.localeCompare(b.file));
       conversations.push(items);
+    }
+    if (deferredRoots.length > 0) {
+      queue.push(...deferredRoots);
     }
   }
 
@@ -1454,6 +1549,37 @@ function mergeConversationsBySubjectKey(conversations, key, from, to) {
         && conversation.firstDate >= from
         && conversation.firstDate < to;
     })
+    .sort((a, b) => (a.firstDate - b.firstDate) || a.title.localeCompare(b.title, "fr"));
+
+  if (matched.length <= 1) return { conversations, merged: null };
+
+  const [target, ...others] = matched;
+  for (const conversation of others) {
+    target.messages.push(...conversation.messages);
+  }
+  target.messages.sort((a, b) => (a.date - b.date) || a.file.localeCompare(b.file));
+  target.firstDate = target.messages[0].date;
+  target.lastDate = target.messages.at(-1).date;
+  target.autoSpaceMerged = true;
+  target.spaceMergeTitles = [...new Set([...(target.spaceMergeTitles ?? [target.title]), ...others.map((conversation) => conversation.title)])];
+
+  return {
+    conversations: conversations.filter((conversation) => !others.includes(conversation)).map((conversation) => (
+      conversation === target ? target : conversation
+    )),
+    merged: {
+      title: target.title,
+      mergedTitles: others.map((conversation) => conversation.title),
+      messages: target.messages.length,
+      firstDate: target.firstDate,
+    },
+  };
+}
+
+function mergeConversationsByTitles(conversations, titles) {
+  const wantedTitles = new Set(titles);
+  const matched = conversations
+    .filter((conversation) => wantedTitles.has(conversation.title))
     .sort((a, b) => (a.firstDate - b.firstDate) || a.title.localeCompare(b.title, "fr"));
 
   if (matched.length <= 1) return { conversations, merged: null };
@@ -2109,6 +2235,29 @@ async function main() {
   );
   conversations = armeeMerge.conversations;
   if (armeeMerge.merged) forcedMergeReport.push(armeeMerge.merged);
+
+  const meyerMerge = mergeConversationsBySubjectKey(
+    conversations,
+    "unmeyervendreauxenchres3500euro",
+    new Date("2004-09-09T00:00:00+02:00"),
+    new Date("2004-09-11T00:00:00+02:00"),
+  );
+  conversations = meyerMerge.conversations;
+  if (meyerMerge.merged) forcedMergeReport.push(meyerMerge.merged);
+
+  const meyerTitleMerge = mergeConversationsByTitles(conversations, [
+    "un Meyer à vendre aux enchères 3500 euro",
+    "__un_Meyer_à_vendre_aux_enchères_3500_euro",
+  ]);
+  conversations = meyerTitleMerge.conversations;
+  if (meyerTitleMerge.merged) forcedMergeReport.push(meyerTitleMerge.merged);
+
+  const vocabulaireMerge = mergeConversationsByTitles(conversations, [
+    "Vocabulaire d'escrime médiéval au XVIIe",
+    "Vocabulaire d'esc rime médiéval au XVIIe",
+  ]);
+  conversations = vocabulaireMerge.conversations;
+  if (vocabulaireMerge.merged) forcedMergeReport.push(vocabulaireMerge.merged);
 
   assignConversationSlugs(conversations);
 
