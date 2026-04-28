@@ -136,6 +136,12 @@ const CONVERSATION_KEYS_SPLIT_BY_GAP = new Set([
   "talhoffer",
   "merci",
 ]);
+const FORCED_ROOT_CONVERSATION_KEYS = new Set([
+  "bouclier rond xve",
+  "armee louis xiv",
+  "chilvary bookself",
+  "chilvary booksel",
+]);
 const CONVERSATION_TITLE_MERGE_RULES = [
   {
     key: "stagesdescrime",
@@ -328,6 +334,11 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2006-02-04T00:00:00+01:00"),
   },
   {
+    key: "armee louis xiv",
+    from: new Date("2006-02-01T00:00:00+01:00"),
+    to: new Date("2006-03-01T00:00:00+01:00"),
+  },
+  {
     key: "stagedescrimeancienneschiltigheim",
     from: new Date("2006-02-03T00:00:00+01:00"),
     to: new Date("2006-02-23T00:00:00+01:00"),
@@ -338,9 +349,40 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2004-09-17T00:00:00+02:00"),
   },
   {
-    keys: ["stagedeschiltigheim", "stagedescrimeancienneschiltigheim"],
-    from: new Date("2006-02-01T00:00:00+01:00"),
-    to: new Date("2006-03-01T00:00:00+01:00"),
+    keys: [
+      "stageaschiltigheim",
+      "stagedeschiltigheim",
+      "stageschiltigheim",
+      "stagedescrimeancienneaschiltigheim",
+      "stagedescrimeancienneschiltigheim",
+      "stagedescrimeanciennedeschiltigheim",
+    ],
+    from: new Date("2005-10-01T00:00:00+02:00"),
+    to: new Date("2007-01-01T00:00:00+01:00"),
+  },
+  {
+    keys: [
+      "stageaschiltigheim",
+      "stagedeschiltigheim",
+      "stageschiltigheim",
+      "stagedescrimeancienneaschiltigheim",
+      "stagedescrimeancienneschiltigheim",
+      "stagedescrimeanciennedeschiltigheim",
+    ],
+    from: new Date("2007-01-01T00:00:00+01:00"),
+    to: new Date("2007-03-01T00:00:00+01:00"),
+  },
+  {
+    keys: [
+      "stageaschiltigheim",
+      "stagedeschiltigheim",
+      "stageschiltigheim",
+      "stagedescrimeancienneaschiltigheim",
+      "stagedescrimeancienneschiltigheim",
+      "stagedescrimeanciennedeschiltigheim",
+    ],
+    from: new Date("2007-08-01T00:00:00+02:00"),
+    to: new Date("2007-09-01T00:00:00+02:00"),
   },
   {
     key: "diplomeeuropeenencombatmedieval",
@@ -1108,6 +1150,9 @@ function buildThreads(messages) {
   for (const message of messages) {
     if (!message.messageId) continue;
     const node = getNode(message.messageId);
+    if (FORCED_ROOT_CONVERSATION_KEYS.has(message.key ?? "")) {
+      continue;
+    }
     const references = message.references ?? [];
     let parentId = "";
 
@@ -1357,6 +1402,41 @@ function mergeConversationByRule(conversations, rule) {
       return allowedKeys.includes(normalizedTitle)
         && conversation.firstDate >= rule.from
         && conversation.firstDate < rule.to;
+    })
+    .sort((a, b) => (a.firstDate - b.firstDate) || a.title.localeCompare(b.title, "fr"));
+
+  if (matched.length <= 1) return { conversations, merged: null };
+
+  const [target, ...others] = matched;
+  for (const conversation of others) {
+    target.messages.push(...conversation.messages);
+  }
+  target.messages.sort((a, b) => (a.date - b.date) || a.file.localeCompare(b.file));
+  target.firstDate = target.messages[0].date;
+  target.lastDate = target.messages.at(-1).date;
+  target.autoSpaceMerged = true;
+  target.spaceMergeTitles = [...new Set([...(target.spaceMergeTitles ?? [target.title]), ...others.map((conversation) => conversation.title)])];
+
+  return {
+    conversations: conversations.filter((conversation) => !others.includes(conversation)).map((conversation) => (
+      conversation === target ? target : conversation
+    )),
+    merged: {
+      title: target.title,
+      mergedTitles: others.map((conversation) => conversation.title),
+      messages: target.messages.length,
+      firstDate: target.firstDate,
+    },
+  };
+}
+
+function mergeConversationsBySubjectKey(conversations, key, from, to) {
+  const matched = conversations
+    .filter((conversation) => {
+      const hasKey = conversation.messages.some((message) => message.key === key);
+      return hasKey
+        && conversation.firstDate >= from
+        && conversation.firstDate < to;
     })
     .sort((a, b) => (a.firstDate - b.firstDate) || a.title.localeCompare(b.title, "fr"));
 
@@ -2004,6 +2084,15 @@ async function main() {
     conversations = result.conversations;
     if (result.merged) forcedMergeReport.push(result.merged);
   }
+
+  const armeeMerge = mergeConversationsBySubjectKey(
+    conversations,
+    "armee louis xiv",
+    new Date("2006-02-01T00:00:00+01:00"),
+    new Date("2006-03-01T00:00:00+01:00"),
+  );
+  conversations = armeeMerge.conversations;
+  if (armeeMerge.merged) forcedMergeReport.push(armeeMerge.merged);
 
   assignConversationSlugs(conversations);
 
