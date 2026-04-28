@@ -2,6 +2,8 @@ const toggle = document.querySelector(".menu-toggle");
 const sidebar = document.querySelector(".sidebar");
 const overlay = document.querySelector(".overlay");
 const siteHeader = document.querySelector(".site-header");
+const backToTopButton = document.querySelector("[data-sidebar-back-to-top]");
+const mainBackToTopButton = document.querySelector("[data-main-back-to-top]");
 
 function syncHeaderHeight() {
   if (!siteHeader) return;
@@ -38,8 +40,17 @@ if (activeSidebarLink && window.matchMedia("(min-width: 70rem)").matches) {
   activeSidebarLink.scrollIntoView({ block: "center" });
 }
 
+backToTopButton?.addEventListener("click", () => {
+  sidebar?.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+mainBackToTopButton?.addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
 const searchForm = document.querySelector("[data-search-form]");
 const searchInput = searchForm?.querySelector('input[name="q"]') ?? null;
+const searchViewInputs = searchForm ? [...searchForm.querySelectorAll('input[name="view"]')] : [];
 const searchResults = searchForm?.querySelector("[data-search-results]") ?? null;
 const searchIndex = Array.isArray(window.archiveSearchIndex) ? window.archiveSearchIndex : [];
 
@@ -87,10 +98,46 @@ function findSearchMatches(query) {
     .slice(0, 12);
 }
 
+function getSelectedSearchView() {
+  return searchViewInputs.find((input) => input.checked)?.value ?? "conversations";
+}
+
+function syncSearchViewStyles() {
+  for (const input of searchViewInputs) {
+    input.parentElement?.classList.toggle("is-active", input.checked);
+  }
+}
+
+function groupSearchMatchesByConversation(matches) {
+  const grouped = new Map();
+
+  for (const entry of matches) {
+    const key = entry.conversationUrl ?? entry.messageUrl;
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        conversationTitle: entry.conversationTitle,
+        conversationUrl: entry.conversationUrl ?? entry.messageUrl,
+        dateLabel: entry.dateLabel,
+        from: entry.from,
+        preview: entry.preview,
+        messages: [entry],
+      });
+      continue;
+    }
+
+    const item = grouped.get(key);
+    item.messages.push(entry);
+    if (entry.dateLabel < item.dateLabel) item.dateLabel = entry.dateLabel;
+  }
+
+  return [...grouped.values()];
+}
+
 function renderSearchResults(query) {
   if (!searchResults) return [];
 
   const matches = findSearchMatches(query);
+  const view = getSelectedSearchView();
 
   if (!query.trim()) {
     searchResults.hidden = true;
@@ -104,9 +151,23 @@ function renderSearchResults(query) {
     return [];
   }
 
+  if (view === "conversations") {
+    const groupedMatches = groupSearchMatchesByConversation(matches);
+    searchResults.hidden = false;
+    searchResults.innerHTML = groupedMatches.map((entry) => `
+    <a class="search-result" href="${entry.conversationUrl}">
+      <strong>${escapeHtml(entry.conversationTitle)}</strong>
+      <span>${entry.messages.length} message${entry.messages.length > 1 ? "s" : ""}</span>
+      <small>${escapeHtml(entry.dateLabel)} · ${escapeHtml(entry.from)}</small>
+      <p>${escapeHtml(entry.preview)}</p>
+    </a>
+  `).join("");
+    return groupedMatches;
+  }
+
   searchResults.hidden = false;
   searchResults.innerHTML = matches.map((entry) => `
-    <a class="search-result" href="${entry.url}">
+    <a class="search-result" href="${entry.messageUrl}">
       <strong>${escapeHtml(entry.subject)}</strong>
       <span>${escapeHtml(entry.conversationTitle)}</span>
       <small>${escapeHtml(entry.dateLabel)} · ${escapeHtml(entry.from)}</small>
@@ -122,7 +183,12 @@ function syncSearchPageFromUrl() {
 
   const params = new URLSearchParams(window.location.search);
   const query = params.get("q") ?? "";
+  const view = params.get("view") === "messages" ? "messages" : "conversations";
   if (searchInput) searchInput.value = query;
+  for (const input of searchViewInputs) {
+    input.checked = input.value === view;
+  }
+  syncSearchViewStyles();
   renderSearchResults(query);
 }
 
@@ -142,11 +208,42 @@ searchForm?.addEventListener("submit", (event) => {
   } else {
     params.delete("q");
   }
+  const view = getSelectedSearchView();
+  if (view !== "conversations") {
+    params.set("view", view);
+  } else {
+    params.delete("view");
+  }
 
   const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
   window.history.replaceState({}, "", nextUrl);
+  syncSearchViewStyles();
   renderSearchResults(query);
 });
+
+for (const input of searchViewInputs) {
+  input.addEventListener("change", () => {
+    if (searchIndex.length === 0) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const query = searchInput?.value ?? "";
+    if (query.trim()) {
+      params.set("q", query);
+    } else {
+      params.delete("q");
+    }
+    const view = getSelectedSearchView();
+    if (view !== "conversations") {
+      params.set("view", view);
+    } else {
+      params.delete("view");
+    }
+    const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+    window.history.replaceState({}, "", nextUrl);
+    syncSearchViewStyles();
+    renderSearchResults(query);
+  });
+}
 
 syncSearchPageFromUrl();
 

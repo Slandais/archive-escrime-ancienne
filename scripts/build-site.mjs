@@ -2108,11 +2108,13 @@ ${extraHead ? `${extraHead}\n` : ""}  <meta name="theme-color" content="#1d2b36"
   </header>
   <aside class="sidebar" id="conversation-nav">
     <nav>${nav}</nav>
+    <button class="sidebar-back-to-top" type="button" data-sidebar-back-to-top>Remonter en haut</button>
   </aside>
   <div class="overlay" data-close-menu></div>
   <main class="archive-main${mainClass ? ` ${mainClass}` : ""}">
 ${body}
   </main>
+  <button class="main-back-to-top" type="button" data-main-back-to-top>Remonter en haut</button>
 ${extraScripts}
   <script src="${relative}/assets/archive.js"></script>
 </body>
@@ -2124,11 +2126,25 @@ function renderSearchForm({
   variant = "search-panel",
   inputId = "message-search",
   inputValue = "",
+  viewValue = "conversations",
+  includeViewSwitch = true,
   placeholder = "Exemple : stage beaujeu, federation, Dijon...",
 } = {}) {
   return `<form class="${variant}" role="search" action="${action}" method="get" data-search-form>
         <label class="search-label" for="${inputId}">Sujet, auteur ou contenu d'un message</label>
         <input id="${inputId}" name="q" type="search" value="${escapeHtml(inputValue)}" placeholder="${escapeHtml(placeholder)}" autocomplete="off">
+        ${includeViewSwitch ? `
+        <fieldset class="search-view-switch" aria-label="Affichage des résultats">
+          <legend>Affichage des résultats</legend>
+          <label class="search-view-option${viewValue === "conversations" ? " is-active" : ""}">
+            <input type="radio" name="view" value="conversations"${viewValue === "conversations" ? " checked" : ""}>
+            <span>Conversations</span>
+          </label>
+          <label class="search-view-option${viewValue === "messages" ? " is-active" : ""}">
+            <input type="radio" name="view" value="messages"${viewValue === "messages" ? " checked" : ""}>
+            <span>Messages</span>
+          </label>
+        </fieldset>` : ""}
         <p class="search-help">Saisissez un ou plusieurs mots puis validez pour afficher les resultats.</p>
         <div class="search-results" data-search-results hidden></div>
       </form>`;
@@ -2548,17 +2564,20 @@ async function main() {
     .filter((conversation) => listedConversationBySlug.has(conversation.slug))
     .flatMap((conversation) => conversation.messages.map((message, index) => ({
       conversationTitle: conversation.title,
+      conversationUrl: `conversations/${conversation.slug}.html`,
       subject: message.subject,
       from: message.from,
       dateLabel: formatDate(message.date),
       preview: summarizeText(message.text),
-      url: `conversations/${conversation.slug}.html#message-${index + 1}`,
+      messageUrl: `conversations/${conversation.slug}.html#message-${index + 1}`,
       searchText: normalizeForSearch(`${conversation.title} ${message.subject} ${message.from} ${message.text}`),
     })));
 
   const categories = CATEGORY_DEFINITIONS.map((category) => ({
     ...category,
-    items: conversationsToList.filter((conversation) => category.matches(conversation)),
+    items: conversationsToList
+      .filter((conversation) => category.matches(conversation))
+      .sort((a, b) => (b.messages.length - a.messages.length) || (a.firstDate - b.firstDate) || a.title.localeCompare(b.title, "fr")),
   }));
 
   const nav = renderNav(conversationsToList, { currentPage: "home", relative: "." });
@@ -2576,6 +2595,7 @@ async function main() {
             action: "recherche.html",
             variant: "home-search-form",
             inputId: "home-message-search",
+            includeViewSwitch: false,
             placeholder: "Exemple : épée longue, talhoffer, Dijon, traduction",
           })}
         </article>
@@ -2609,7 +2629,7 @@ async function main() {
 
   const searchBody = `    <section class="hero">
       <h1>Recherche</h1>
-      <p>La recherche parcourt tous les messages et chaque resultat renvoie vers la conversation correspondante.</p>
+      <p>La recherche parcourt tous les messages. Vous pouvez afficher les resultats message par message ou regrouper les resultats par conversation.</p>
     </section>
     <section class="home-section">
       ${renderSearchForm({ action: "recherche.html", variant: "search-panel", inputId: "message-search" })}

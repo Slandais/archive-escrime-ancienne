@@ -164,6 +164,51 @@ body {
   font-size: .82rem;
 }
 
+.sidebar-back-to-top {
+  position: sticky;
+  bottom: 0;
+  display: block;
+  width: 100%;
+  margin-top: .85rem;
+  padding: .7rem .8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff, #eef2fb);
+  color: var(--text);
+  font-weight: 700;
+  box-shadow: 0 -6px 14px rgb(13 71 161 / 8%);
+}
+
+.sidebar-back-to-top:hover {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, #fff, #e5efff);
+  color: var(--accent);
+}
+
+.main-back-to-top {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 35;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 10.5rem;
+  padding: .7rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff, #eef2fb);
+  color: var(--text);
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgb(13 71 161 / 14%);
+}
+
+.main-back-to-top:hover {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, #fff, #e5efff);
+  color: var(--accent);
+}
+
 .overlay {
   position: fixed;
   inset: 0;
@@ -272,6 +317,59 @@ body {
   margin: 0;
   padding: .95rem 1rem;
   font-size: 1.05rem;
+}
+
+.search-view-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin: .9rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.search-view-switch legend {
+  width: 100%;
+  margin-bottom: .1rem;
+  padding: 0;
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+.search-view-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 11rem;
+  padding: .7rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.search-view-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.search-view-option span {
+  font-weight: 600;
+}
+
+.search-view-option.is-active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.search-view-option:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .home-search-form {
