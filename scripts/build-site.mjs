@@ -2296,6 +2296,155 @@ async function main() {
   conversations = thibaultMerge.conversations;
   if (thibaultMerge.merged) forcedMergeReport.push(thibaultMerge.merged);
 
+  const stageI33BeaujeuMerge = mergeConversationsByTitles(conversations, [
+    "Stage I.33 à Beaujeu",
+  ]);
+  conversations = stageI33BeaujeuMerge.conversations;
+  if (stageI33BeaujeuMerge.merged) forcedMergeReport.push(stageI33BeaujeuMerge.merged);
+
+  const stagesMerge = mergeConversationsByTitles(conversations, [
+    "Stages",
+  ]);
+  conversations = stagesMerge.conversations;
+  if (stagesMerge.merged) forcedMergeReport.push(stagesMerge.merged);
+
+  const stageEteMerge = mergeConversationsByTitles(conversations, [
+    "Stage ete 2006",
+    "stage ete 2007 !",
+  ]);
+  conversations = stageEteMerge.conversations;
+  if (stageEteMerge.merged) forcedMergeReport.push(stageEteMerge.merged);
+
+  const liechtenauerMerge = mergeConversationsByTitles(conversations, [
+    "Liechtenauer",
+    "Liechtenauer et I.33",
+  ]);
+  conversations = liechtenauerMerge.conversations;
+  if (liechtenauerMerge.merged) forcedMergeReport.push(liechtenauerMerge.merged);
+
+  const dijon2009Merge = mergeConversationsByTitles(conversations, [
+    "Dijon 2009 : mise Ã  jour",
+    "Dijon 2009",
+  ]);
+  conversations = dijon2009Merge.conversations;
+  if (dijon2009Merge.merged) forcedMergeReport.push(dijon2009Merge.merged);
+
+  const suiteEtFinMerge = mergeConversationsByTitles(conversations, [
+    "Suite et fin",
+    "Suite et fin: avis exterieur",
+  ]);
+  conversations = suiteEtFinMerge.conversations;
+  if (suiteEtFinMerge.merged) forcedMergeReport.push(suiteEtFinMerge.merged);
+
+  const stageI33Merge = mergeConversationsByTitles(conversations, [
+    "stage I 33",
+    "Stage I.33 Ã  Beaujeu",
+  ]);
+  conversations = stageI33Merge.conversations;
+  if (stageI33Merge.merged) forcedMergeReport.push(stageI33Merge.merged);
+
+  const fioreMerge = mergeConversationsByTitles(conversations, [
+    "Stage Strasbourg - Fiore",
+    "Fiore",
+  ]);
+  conversations = fioreMerge.conversations;
+  if (fioreMerge.merged) forcedMergeReport.push(fioreMerge.merged);
+
+  const montpellierMerge = mergeConversationsByTitles(conversations, [
+    "Pour le combat mÃ©diÃ©val Ã  Montpellier : Compagnie Saint guilhem",
+    "Montpellier",
+  ]);
+  conversations = montpellierMerge.conversations;
+  if (montpellierMerge.merged) forcedMergeReport.push(montpellierMerge.merged);
+
+  const thibautMerge = mergeConversationsByTitles(conversations, [
+    "Thibault",
+    "[Thibaut]",
+  ]);
+  conversations = thibautMerge.conversations;
+  if (thibautMerge.merged) forcedMergeReport.push(thibautMerge.merged);
+
+  const projetsBooksMerge = mergeConversationsByTitles(conversations, [
+    "Projets \"books\" de google - quelques trouvailles",
+  ]);
+  conversations = projetsBooksMerge.conversations;
+  if (projetsBooksMerge.merged) forcedMergeReport.push(projetsBooksMerge.merged);
+
+  const paulusKalMerge = mergeConversationsByTitles(conversations, [
+    "Paulus Kal CGM1507",
+  ]);
+  conversations = paulusKalMerge.conversations;
+  if (paulusKalMerge.merged) forcedMergeReport.push(paulusKalMerge.merged);
+
+  const refonteArdamheMerge = mergeConversationsByTitles(conversations, [
+    "Refonte du site de l'ardamhe et fédération",
+  ]);
+  conversations = refonteArdamheMerge.conversations;
+  if (refonteArdamheMerge.merged) forcedMergeReport.push(refonteArdamheMerge.merged);
+
+  const gauchersMerge = mergeConversationsByTitles(conversations, [
+    "Gauchers",
+    "Gauchers et pivots",
+  ]);
+  conversations = gauchersMerge.conversations;
+  if (gauchersMerge.merged) forcedMergeReport.push(gauchersMerge.merged);
+
+  const fausseGardeMerge = mergeConversationsByTitles(conversations, [
+    "Fausse garde",
+    "Je n'aime pas le nom de Fausse garde",
+  ]);
+  conversations = fausseGardeMerge.conversations;
+  if (fausseGardeMerge.merged) forcedMergeReport.push(fausseGardeMerge.merged);
+
+  const stageEscrimeMerge = mergeConversationsByTitles(conversations, [
+    "Stage d'escrime",
+    "stage d'escrime civile des XIIIe-XIVe s.",
+  ]);
+  conversations = stageEscrimeMerge.conversations;
+  if (stageEscrimeMerge.merged) forcedMergeReport.push(stageEscrimeMerge.merged);
+
+  const combatMerdievalMerge = mergeConversationsByTitles(conversations, [
+    "Combat merdiéval",
+  ]);
+  conversations = combatMerdievalMerge.conversations;
+  if (combatMerdievalMerge.merged) forcedMergeReport.push(combatMerdievalMerge.merged);
+
+  const achatEpeeMerge = mergeConversationsByTitles(conversations, [
+    "Achat épée 1/2",
+  ]);
+  conversations = achatEpeeMerge.conversations;
+  if (achatEpeeMerge.merged) forcedMergeReport.push(achatEpeeMerge.merged);
+
+  const laMainMerge = mergeConversationsByTitles(conversations, [
+    "La main",
+  ]);
+  conversations = laMainMerge.conversations;
+  if (laMainMerge.merged) forcedMergeReport.push(laMainMerge.merged);
+
+  const remiseEnLigneMerge = mergeConversationsByTitles(conversations, [
+    "Remise en ligne du site et rajout d'une section",
+  ]);
+  conversations = remiseEnLigneMerge.conversations;
+  if (remiseEnLigneMerge.merged) forcedMergeReport.push(remiseEnLigneMerge.merged);
+
+  const epeeCapeMerge = mergeConversationsByTitles(conversations, [
+    "Epée / cape",
+  ]);
+  conversations = epeeCapeMerge.conversations;
+  if (epeeCapeMerge.merged) forcedMergeReport.push(epeeCapeMerge.merged);
+
+  const dijon2007Merge = mergeConversationsByTitles(conversations, [
+    "Dijon 2007 - 6e Rencontres Internationales d'Arts Martiaux Historiques Européens",
+  ]);
+  conversations = dijon2007Merge.conversations;
+  if (dijon2007Merge.merged) forcedMergeReport.push(dijon2007Merge.merged);
+
+  const lanceSurFautreMerge = mergeConversationsByTitles(conversations, [
+    "[lance sur fautre]",
+  ]);
+  conversations = lanceSurFautreMerge.conversations;
+  if (lanceSurFautreMerge.merged) forcedMergeReport.push(lanceSurFautreMerge.merged);
+
   const stageEscrimeCivileMerge = mergeConversationsByTitles(conversations, [
     "Stage Escrime civile",
     "Stage Escrime ci vile",
@@ -2357,6 +2506,12 @@ async function main() {
   ]);
   conversations = questionFondMerge.conversations;
   if (questionFondMerge.merged) forcedMergeReport.push(questionFondMerge.merged);
+
+  const lEtauMerge = mergeConversationsByTitles(conversations, [
+    "L'étau se resserre ?",
+  ]);
+  conversations = lEtauMerge.conversations;
+  if (lEtauMerge.merged) forcedMergeReport.push(lEtauMerge.merged);
 
   assignConversationSlugs(conversations);
 
