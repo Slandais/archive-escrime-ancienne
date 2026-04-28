@@ -199,9 +199,14 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2004-04-17T00:00:00+02:00"),
   },
   {
-    key: "escrimemedievaleouartistiqueinfo",
+    keys: ["escrimemedievaleouartistiqueinfo", "escrimemedievale"],
     from: new Date("2004-09-04T00:00:00+02:00"),
     to: new Date("2004-09-16T00:00:00+02:00"),
+  },
+  {
+    key: "i33",
+    from: new Date("2004-09-08T00:00:00+02:00"),
+    to: new Date("2004-09-21T00:00:00+02:00"),
   },
   {
     key: "rechercheescrimeartistiquesurlyon",
@@ -319,14 +324,19 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2006-06-23T00:00:00+02:00"),
   },
   {
-    key: "retoursurflammes",
+    keys: ["retourdeflamme", "retoursurflammes"],
     from: new Date("2004-08-31T00:00:00+02:00"),
     to: new Date("2004-09-01T00:00:00+02:00"),
   },
   {
+    key: "stageequitationxiis",
+    from: new Date("2004-10-14T00:00:00+02:00"),
+    to: new Date("2004-10-27T00:00:00+01:00"),
+  },
+  {
     key: "deshordeshurlantesdechevaliersdeferlent",
     from: new Date("2009-05-08T00:00:00+02:00"),
-    to: new Date("2009-05-11T00:00:00+02:00"),
+    to: new Date("2009-05-12T00:00:00+02:00"),
   },
   {
     key: "stagedescrimeancienneaschiltigheim",
