@@ -594,3 +594,9 @@ body {
     width: auto;
   }
 }
+
+@media (max-width: 69.999rem) {
+  body.sidebar-open .main-back-to-top {
+    display: none;
+  }
+}

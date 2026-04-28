@@ -21,6 +21,7 @@ if (siteHeader && "ResizeObserver" in window) {
 function setMenu(open) {
   sidebar?.classList.toggle("open", open);
   overlay?.classList.toggle("open", open);
+  document.body.classList.toggle("sidebar-open", open);
   toggle?.setAttribute("aria-expanded", String(open));
 }
 

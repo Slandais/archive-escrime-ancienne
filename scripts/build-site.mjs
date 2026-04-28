@@ -2101,7 +2101,7 @@ function renderNav(conversations, { currentSlug = "", currentPage = "", relative
       <input id="nav-search-input" name="q" type="search" placeholder="Rechercher dans les messages..." autocomplete="off">
     </form>
     <a class="nav-page-link${(currentPage === "categories" || currentPage.startsWith("category:")) ? " active" : ""}" href="${relative}/categories.html">
-      <span>Categories</span>
+      <span>Cat\u00e9gories</span>
     </a>
     <a class="nav-page-link${currentPage === "about" ? " active" : ""}" href="${relative}/about.html">
       <span>A propos</span>
@@ -2670,8 +2670,8 @@ async function main() {
           })}
         </article>
         <article class="category-card">
-          <h3><a href="categories.html">Categories</a></h3>
-          <p>Parcourez les grandes categories thematiques et leurs conversations associees.</p>
+    <h3><a href="categories.html">Cat\u00e9gories</a></h3>
+    <p>Parcourez les grandes cat\u00e9gories th\u00e9matiques et leurs conversations associ\u00e9es.</p>
         </article>
       </div>
     </section>`;
@@ -2717,8 +2717,8 @@ async function main() {
   }), "utf8");
 
   const categoriesBody = `    <section class="hero">
-      <h1>Categories</h1>
-      <p>Ces categories regroupent plusieurs conversations pour faciliter l'exploration thematique de l'archive.</p>
+  <h1>Cat\u00e9gories</h1>
+  <p>Ces cat\u00e9gories regroupent plusieurs conversations pour faciliter l'exploration th\u00e9matique de l'archive.</p>
     </section>
     <section class="home-section">
       <div class="category-list">
@@ -2731,8 +2731,8 @@ ${categories.map((category) => `        <article class="category-card">
     </section>`;
 
   await writeFile(path.join(OUT_DIR, "categories.html"), pageShell({
-    title: `Categories - ${TITLE}`,
-    description: "Categories thematiques des conversations de la mailing-list escrime_medievale.",
+  title: `Cat\u00e9gories - ${TITLE}`,
+  description: "Cat\u00e9gories th\u00e9matiques des conversations de la mailing-list escrime_medievale.",
     body: categoriesBody,
     nav: renderNav(conversationsToList, { currentPage: "categories", relative: "." }),
     relative: ".",
