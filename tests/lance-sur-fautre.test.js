@@ -19,7 +19,6 @@ describe("fusion des conversations", () => {
       ]),
     );
   });
-
   it("ne conserve qu'une seule conversation listee pour lance sur fautre", async () => {
     const siteData = JSON.parse(await readFile(SITE_DATA_PATH, "utf8"));
 
