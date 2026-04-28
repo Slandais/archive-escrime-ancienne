@@ -338,6 +338,41 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     to: new Date("2004-09-17T00:00:00+02:00"),
   },
   {
+    keys: ["stagedeschiltigheim", "stagedescrimeancienneschiltigheim"],
+    from: new Date("2006-02-01T00:00:00+01:00"),
+    to: new Date("2006-03-01T00:00:00+01:00"),
+  },
+  {
+    key: "diplomeeuropeenencombatmedieval",
+    from: new Date("2006-03-01T00:00:00+01:00"),
+    to: new Date("2006-04-01T00:00:00+02:00"),
+  },
+  {
+    key: "lexiquei33",
+    from: new Date("2004-06-01T00:00:00+02:00"),
+    to: new Date("2004-08-01T00:00:00+02:00"),
+  },
+  {
+    key: "les6pieceswiththebuckler",
+    from: new Date("2005-10-01T00:00:00+02:00"),
+    to: new Date("2005-10-10T00:00:00+02:00"),
+  },
+  {
+    key: "epecape",
+    from: new Date("2005-06-01T00:00:00+02:00"),
+    to: new Date("2005-06-30T00:00:00+02:00"),
+  },
+  {
+    key: "statutsurlepretdesarmes30septembre1293",
+    from: new Date("2006-09-01T00:00:00+02:00"),
+    to: new Date("2006-09-30T00:00:00+02:00"),
+  },
+  {
+    key: "techniqueavecunehallebarde",
+    from: new Date("2005-04-01T00:00:00+02:00"),
+    to: new Date("2005-04-30T00:00:00+02:00"),
+  },
+  {
     key: "stagedinitiationaui33",
     from: new Date("2004-02-01T00:00:00+01:00"),
     to: new Date("2004-03-06T00:00:00+01:00"),
