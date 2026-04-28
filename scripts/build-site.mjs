@@ -141,6 +141,7 @@ const FORCED_ROOT_CONVERSATION_KEYS = new Set([
   "armee louis xiv",
   "chilvary bookself",
   "chilvary booksel",
+  "langen ort",
 ]);
 const CONVERSATION_TITLE_MERGE_RULES = [
   {
@@ -222,6 +223,11 @@ const CONVERSATION_TITLE_MERGE_RULES = [
     key: "commandecollective",
     from: new Date("2005-02-19T00:00:00+01:00"),
     to: new Date("2005-03-04T00:00:00+01:00"),
+  },
+  {
+    key: "langenort",
+    from: new Date("2005-02-01T00:00:00+01:00"),
+    to: new Date("2005-03-01T00:00:00+01:00"),
   },
   {
     keys: ["commandecollective", "commandecollectiveeartistiquehistoriqueer"],
