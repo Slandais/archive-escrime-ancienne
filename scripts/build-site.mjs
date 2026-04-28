@@ -125,6 +125,13 @@ const PARTIAL_BUILD_CONVERSATION_KEYS = new Set([
   "stage 2007",
   "st didier 2003",
   "st didier 2010",
+  "traduction alfieri",
+  "la transcription du cgm 558",
+  "transcriptions sur wikipedia",
+  "leckuchner transcription",
+  "transcription du ms kk5013 du kunsthistorisches museum de vienne",
+  "traduction latin",
+  "transcription de sources",
 ]);
 const CONVERSATION_KEYS_SPLIT_BY_YEAR = new Set([
   "stage",
@@ -940,18 +947,52 @@ const CATEGORY_DEFINITIONS = [
     matches: (conversation) => conversation.messages.length >= 10,
   },
   {
-    slug: "stage",
-    title: "Stage",
-    description: "Conversations qui traitent d'un stage, d'une annonce ou d'un retour autour d'un stage.",
-    intro: "Cette categorie regroupe les annonces, questions et comptes rendus autour des stages mentionnes dans la mailing-list.",
-    matches: (conversation) => /\bstage\b|\bstages\b/.test(conversation.searchText),
+    slug: "materiel",
+    title: "Matériel",
+    description: "Conversations qui parlent du matériel à utiliser pour pratiquer les AMHE.",
+    intro: "Cette categorie regroupe uniquement les fils explicitement liés au matériel.",
+    matches: (conversation) => new Set([
+      "2007-10-17-specifications-masque-escrime-sportive",
+      "2005-05-13-coudre-un-gant-en-cuir-sur-un-gantelet",
+      "2007-10-18-n-masque-fie-bavette-1600n-doit-resist",
+      "2005-09-30-epees-en-bois",
+      "2005-12-06-production-d-epees-en-bois-region-parisienne",
+      "2003-10-20-batardes",
+      "2004-05-02-achat-epee-1-2",
+      "2004-01-09-outils-pour-le-cuir",
+    ]).has(conversation.slug),
   },
   {
-    slug: "federalisme",
-    title: "Fédéralisme",
-    description: "Conversations autour des federations, annuaires, portails et initiatives collectives.",
-    intro: "Cette categorie met en avant les conversations autour des structures collectives, des annuaires de groupes et des initiatives de coordination.",
-    matches: (conversation) => /\bfederation\b|\bfederations\b|\bannuaire\b|\bportail\b|\brecensement\b|\bpratiquants\b|\bquestionnaire\b|\bcommission\b/.test(conversation.searchText),
+    slug: "stages-et-evenements",
+    title: "Stages et évènements",
+    description: "Conversations qui annoncent, documentent ou suivent un évènement AMHE.",
+    intro: "Cette categorie regroupe les fils qui annoncent un stage ou un autre evenement, donnent des informations pratiques, demandent des precisions ou font suite a cet evenement.",
+    matches: (conversation) => /(?:^|[\s\[\(])(?:stage|stages|rencontre|rencontres|evenement|evenements|rassemblement|demonstration)\b|\b(?:info|infos|renseignements?|details?)\b.*\b(?:stage|stages|rencontre|rencontres|evenement|evenements|rassemblement|demonstration)\b|\b(?:suite|retour|compte rendu|cr)\b.*\b(?:stage|stages|rencontre|rencontres|evenement|evenements|rassemblement|demonstration)\b/.test(conversation.titleSearch),
+  },
+  {
+    slug: "associations-et-communaute",
+    title: "Associations et communauté",
+    description: "Conversations autour de la federation, des diplômes, des annuaires et des portails de recensement des pratiquants.",
+    intro: "Cette categorie regroupe uniquement les fils sur la federation, les diplomes, les annuaires, les sites de recensement des pratiquants AMHE et les portails communautaires explicitement nommes.",
+    matches: (conversation) =>
+      /\bfederation\b|\bfederations\b|\bdiplome\b|\bdiplomes\b|\bannuaire\b|\bannuaire des pratiquants\b|\brecensement\b|\bpratiquant\b|\bpratiquants\b|\bportail\b/.test(conversation.titleSearch)
+      || /nouveau\s*!?\s+le\s+portail\s+des\s+amhe/.test(conversation.titleSearch)
+      || /\bamhe\s+pres\s+de\s+meaux\b/.test(conversation.titleSearch),
+  },
+  {
+    slug: "transcriptions-et-traductions",
+    title: "Transcriptions et traductions",
+    description: "Conversations qui annoncent une nouvelle transcription ou traduction.",
+    intro: "Cette categorie regroupe uniquement les fils dont le sujet annonce explicitement une nouvelle transcription ou traduction.",
+    matches: (conversation) =>
+      /\btranscription\b|\btranscriptions\b|\btraduction\b|\btraductions\b/.test(conversation.titleSearch)
+      || /\bnouvelle\s+(?:transcription|traduction)\b/.test(conversation.firstMessageSearch)
+      || new Set([
+        "2003-10-17-st-didier",
+        "2010-02-26-st-didier",
+        "2007-08-30-communique-officiel-de-l-ardamhe-codex-ms-3227a",
+        "2003-11-09-traite-de-lovino",
+      ]).has(conversation.slug),
   },
 ];
 
@@ -1884,6 +1925,21 @@ function fallbackAuthorFromHeader(value) {
   return email ? authorNameFromEmail(email) : "";
 }
 
+function trimTrailingQuoteNoise(value) {
+  const lines = String(value).replace(/\r\n/g, "\n").split("\n");
+  let end = lines.length;
+
+  while (end > 0) {
+    const line = lines[end - 1].trim();
+    if (line !== "" && line !== ">") {
+      break;
+    }
+    end -= 1;
+  }
+
+  return lines.slice(0, end).join("\n");
+}
+
 function cleanMessageText(value) {
   const repairedValue = repairMojibakeAccents(value);
   const cleaned = replaceDisplayNames(removeEmailPlaceholders(anonymizeEmails(removeYahooFooterLines(removeYahooPromoLines(removeYahooMarkerLines(removeYahooGroupLinksLines(removeYahooUnsubscribe(repairedValue))))))
@@ -1900,14 +1956,14 @@ function cleanMessageText(value) {
     .replace(/\n{4,}/g, "\n\n\n")
     .trim()));
 
-  return removeYahooFooterLines(removeYahooPromoLines(removeYahooMarkerLines(removeYahooGroupLinksLines(cleaned))))
+  return trimTrailingQuoteNoise(removeYahooFooterLines(removeYahooPromoLines(removeYahooMarkerLines(removeYahooGroupLinksLines(cleaned))))
     .replace(YAHOO_UNSUBSCRIBE_REGEX, "\n")
     .replace(YAHOO_TRUE_SWITCH_PROMO_REGEX, "\n")
     .replace(YAHOO_ANSWERS_SIGNATURE_REGEX, "\n")
     .replace(YAHOO_HOMEPAGE_PROMO_REGEX, "\n")
     .replace(YAHOO_AUDIO_PROMO_REGEX, "\n")
     .replace(/\n{4,}/g, "\n\n\n")
-    .trim();
+    .trim());
 }
 
 function findBodyEmails(value) {
@@ -2554,6 +2610,12 @@ async function main() {
   const listedConversationBySlug = new Map(conversationsToList.map((conversation) => [conversation.slug, conversation]));
 
   for (const conversation of conversations) {
+    conversation.titleSearch = normalizeForSearch(conversation.title);
+    conversation.firstMessageSearch = normalizeForSearch(
+      conversation.messages[0]
+        ? `${conversation.messages[0].subject} ${conversation.messages[0].from} ${conversation.messages[0].text}`
+        : "",
+    );
     conversation.searchText = normalizeForSearch([
       conversation.title,
       ...conversation.messages.map((message) => `${message.subject} ${message.from} ${message.text}`),
@@ -2661,7 +2723,7 @@ ${categories.map((category) => `        <article class="category-card">
     </section>`;
 
   await writeFile(path.join(OUT_DIR, "categories.html"), pageShell({
-    title: `Categories Â· ${TITLE}`,
+    title: `Categories - ${TITLE}`,
     description: "Categories thematiques des conversations de la mailing-list escrime_medievale.",
     body: categoriesBody,
     nav: renderNav(conversationsToList, { currentPage: "categories", relative: "." }),

@@ -239,7 +239,6 @@ body {
 .hero,
 .conversation-header {
   padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
 }
 
 .home-section {
@@ -290,6 +289,19 @@ body {
   background: var(--accent-bg);
   color: inherit;
   text-decoration: none;
+}
+
+.search-result:link,
+.search-result:visited,
+.search-result:hover,
+.search-result:focus,
+.search-result:active,
+.category-card:link,
+.category-card:visited,
+.category-card:hover,
+.category-card:focus,
+.category-card:active {
+  color: inherit;
 }
 
 .search-result strong,
@@ -406,6 +418,29 @@ body {
 
 .category-card h3 {
   margin-top: 0;
+}
+
+.category-card h2 {
+  margin-top: 0;
+  margin-bottom: .6rem;
+  font-size: 1.3rem;
+  line-height: 1.25;
+}
+
+.category-card h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.category-card h2 a:hover,
+.category-card h2 a:focus-visible {
+  color: var(--accent);
+}
+
+.category-card h2 a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .conversation-list {

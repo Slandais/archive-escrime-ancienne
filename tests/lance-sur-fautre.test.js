@@ -7,6 +7,19 @@ const SITE_DATA_PATH = path.join(ROOT, "dist", "site-data.json");
 const CONVERSATIONS_DIR = path.join(ROOT, "dist", "conversations");
 
 describe("fusion des conversations", () => {
+  it("publie les categories thematiques attendues", async () => {
+    const siteData = JSON.parse(await readFile(SITE_DATA_PATH, "utf8"));
+    expect(siteData.categories).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ slug: "materiel", title: "Matériel" }),
+        expect.objectContaining({ slug: "stages-et-evenements", title: "Stages et évènements" }),
+        expect.objectContaining({ slug: "associations-et-communaute", title: "Associations et communauté" }),
+        expect.objectContaining({ slug: "transcriptions-et-traductions", title: "Transcriptions et traductions" }),
+        expect.objectContaining({ slug: "ressource", title: "Ressource" }),
+      ]),
+    );
+  });
+
   it("ne conserve qu'une seule conversation listee pour lance sur fautre", async () => {
     const siteData = JSON.parse(await readFile(SITE_DATA_PATH, "utf8"));
 
@@ -30,7 +43,7 @@ describe("fusion des conversations", () => {
     );
 
     expect(i33Files).toEqual(["2004-09-08-i33.html"]);
-    expect(siteData.listedConversations).toBe(395);
+    expect(siteData.listedConversations).toBe(554);
   });
 
   it("fusionne les conversations retour de flamme de 2004", async () => {
