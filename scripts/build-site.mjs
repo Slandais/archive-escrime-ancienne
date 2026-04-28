@@ -921,6 +921,7 @@ const MOJIBAKE_REPLACEMENTS = new Map([
   ["\u00c3\u00bc", "ü"],
 ]);
 const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+const EMAIL_FRAGMENT_REGEX = /@[A-ZÀ-ÖØ-Ý0-9][^\s<>"'(){}\[\]]*/gi;
 const EMAIL_PLACEHOLDER_REGEX = /<?\s*\[adresse email anonymis(?:ée|\u00c3\u00a9e|\u00c3\u0192\u00c2\u00a9e)\]\s*>?/gi;
 const YAHOO_FOOTER_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation[\s\S]{0,260}?http:\/\/fr\.docs\.yahoo\.com\/info\/utos\.html(?:[\s\S]{0,220}?http:\/\/fr\.docs\.yahoo\.com\/info\/privacy\.html)?[>\s]*/gi;
 const YAHOO_FOOTER_SHORT_REGEX = /\n?[>\s]*L'utilisation du service Yahoo![>\s]*Groupes est soumise[\s\S]{0,260}?Conditions d'utilisation(?:[\s\S]{0,180}?Charte sur la vie priv[ée]e)?\.?[>\s]*/gi;
@@ -1714,7 +1715,9 @@ function repairMojibakeAccents(value) {
 }
 
 function anonymizeEmails(value) {
-  return value.replace(EMAIL_REGEX, "");
+  return value
+    .replace(EMAIL_REGEX, "")
+    .replace(EMAIL_FRAGMENT_REGEX, "");
 }
 
 function removeEmailPlaceholders(value) {
@@ -1744,6 +1747,7 @@ function removeYahooFooterLines(value) {
 
       return !(
         /^L'utilisation du service Yahoo!\s*Groupes est soumise à l'acceptation des$/i.test(normalized) ||
+        /^des$/i.test(normalized) ||
         /^Conditions d'utilisation et de la Charte sur la vie priv(?:ée|Ã©e), disponibles$/i.test(normalized) ||
         /^Conditions d'utilisation et de la Charte sur la vie priv(?:ée|Ã©e)\.$/i.test(normalized) ||
         /^des Conditions d'utilisation et de la Charte sur la vie priv(?:ée|Ã©e)\.$/i.test(normalized) ||
@@ -1930,8 +1934,12 @@ function trimTrailingQuoteNoise(value) {
   let end = lines.length;
 
   while (end > 0) {
-    const line = lines[end - 1].trim();
-    if (line !== "" && line !== ">") {
+    const line = lines[end - 1];
+    const normalized = line
+      .replace(/&gt;/gi, ">")
+      .trim();
+
+    if (normalized !== "" && !/^(?:>\s*)*$/.test(normalized)) {
       break;
     }
     end -= 1;
