@@ -2208,6 +2208,10 @@ function renderSearchForm({
             <input type="radio" name="view" value="messages"${viewValue === "messages" ? " checked" : ""}>
             <span>Messages</span>
           </label>
+          <label class="search-view-option${viewValue === "author" ? " is-active" : ""}">
+            <input type="radio" name="view" value="author"${viewValue === "author" ? " checked" : ""}>
+            <span>Auteur</span>
+          </label>
         </fieldset>` : ""}
         <p class="search-help">Saisissez un ou plusieurs mots puis validez pour afficher les resultats.</p>
         <div class="search-results" data-search-results hidden></div>
@@ -2706,7 +2710,7 @@ async function main() {
     </section>`;
 
   await writeFile(path.join(OUT_DIR, "recherche.html"), pageShell({
-    title: `Recherche Â· ${TITLE}`,
+    title: `Recherche · ${TITLE}`,
     description: "Recherche plein texte dans les archives de la mailing-list escrime_medievale.",
     body: searchBody,
     nav: renderNav(conversationsToList, { currentPage: "search", relative: "." }),

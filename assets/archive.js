@@ -99,6 +99,15 @@ function findSearchMatches(query) {
     .slice(0, 12);
 }
 
+function findAuthorSearchMatches(query) {
+  const normalizedQuery = normalizeForSearch(query);
+  if (!normalizedQuery) return [];
+
+  return searchIndex
+    .filter((entry) => normalizeForSearch(entry.from).includes(normalizedQuery))
+    .map((entry) => ({ ...entry, score: 0 }));
+}
+
 function getSelectedSearchView() {
   return searchViewInputs.find((input) => input.checked)?.value ?? "conversations";
 }
@@ -137,8 +146,8 @@ function groupSearchMatchesByConversation(matches) {
 function renderSearchResults(query) {
   if (!searchResults) return [];
 
-  const matches = findSearchMatches(query);
   const view = getSelectedSearchView();
+  const matches = view === "author" ? findAuthorSearchMatches(query) : findSearchMatches(query);
 
   if (!query.trim()) {
     searchResults.hidden = true;
@@ -184,7 +193,8 @@ function syncSearchPageFromUrl() {
 
   const params = new URLSearchParams(window.location.search);
   const query = params.get("q") ?? "";
-  const view = params.get("view") === "messages" ? "messages" : "conversations";
+  const rawView = params.get("view");
+  const view = rawView === "messages" || rawView === "author" ? rawView : "conversations";
   if (searchInput) searchInput.value = query;
   for (const input of searchViewInputs) {
     input.checked = input.value === view;
